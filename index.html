@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>Who Owes What</title>
+<style>
+  :root { --bg:#0b0f14; --card:#121821; --ink:#e9eef7; --muted:#9bb0c9; --acc:#4ea8ff; --warn:#ffb54e; }
+  *{box-sizing:border-box;font-family:system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;}
+  body{margin:0;background:var(--bg);color:var(--ink);}
+  .wrap{max-width:720px;margin:0 auto;padding:16px;}
+  .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;padding:14px;}
+  h1,h2,h3{margin:.2em 0 .5em 0;}
+  input,button,select,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid #2b3647;background:#0e141d;color:var(--ink);}
+  button{background:var(--acc);border:none;color:#001322;font-weight:700;cursor:pointer}
+  button.ghost{background:transparent;border:1px solid #2b3647;color:var(--ink)}
+  label{font-size:.9rem;color:var(--muted)}
+  .row{display:flex;gap:10px;align-items:center}
+  .row>*{flex:1}
+  .stack{display:grid;gap:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{padding:8px 10px;border:1px solid #2b3647;border-radius:999px;font-size:.9rem;cursor:pointer}
+  .chip.active{background:#1b2533;border-color:#39567a}
+  .muted{color:var(--muted);font-size:.9rem}
+  .grid{display:grid;gap:8px}
+  .table{width:100%;border-collapse:collapse}
+  .table th,.table td{padding:10px;border-bottom:1px solid #223046;text-align:left;font-size:.95rem}
+  .right{text-align:right}
+  .sticky-bottom{position:sticky;bottom:0;background:linear-gradient(180deg, transparent, rgba(11,15,20,.9));padding-top:10px}
+  .badge{font-size:.8rem;padding:4px 8px;border-radius:999px;background:#16202e;color:#b9d6ff}
+  .danger{color:#ff9e9e}
+  .success{color:#b7ffbf}
+  .small{font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap stack">
+
+  <!-- AUTH -->
+  <div id="authCard" class="card stack">
+    <h2>Who Owes What</h2>
+    <div class="row">
+      <button id="toLogin" class="ghost">Login</button>
+      <button id="toSignup" class="ghost">Sign up</button>
+    </div>
+    <div id="authForms" class="stack">
+      <div id="loginForm" class="stack">
+        <label>Email</label><input id="loginEmail" type="email" autocomplete="email">
+        <label>Password</label><input id="loginPass" type="password" autocomplete="current-password">
+        <button id="loginBtn">Log in</button>
+      </div>
+      <div id="signupForm" class="stack" style="display:none">
+        <label>Display name</label><input id="signupName" type="text">
+        <label>Email</label><input id="signupEmail" type="email" autocomplete="email">
+        <label>Password</label><input id="signupPass" type="password" autocomplete="new-password">
+        <button id="signupBtn">Create account</button>
+      </div>
+    </div>
+    <p id="authMsg" class="muted"></p>
+  </div>
+
+  <!-- APP -->
+  <div id="appCard" class="card stack" style="display:none">
+    <div class="row">
+      <div><h3 id="hello"></h3><div class="muted small" id="myEmail"></div></div>
+      <div style="flex:0">
+        <button id="logoutBtn" class="ghost">Log out</button>
+      </div>
+    </div>
+
+    <!-- Friends -->
+    <div class="stack">
+      <h3>Friends</h3>
+      <div class="row">
+        <input id="friendEmail" type="email" placeholder="friend@email.com (email only; no invite needed)">
+        <button id="addFriendBtn">Add</button>
+      </div>
+      <div id="friendList" class="chips"></div>
+      <div class="muted small">Friends are stored under your profile. You can assign items to any of them. (They’ll see your receipts only if you later add their UID to a receipt.)</div>
+    </div>
+
+    <!-- Upload & OCR -->
+    <div class="stack">
+      <h3>Upload receipt (image)</h3>
+      <input id="fileInput" type="file" accept="image/*" />
+      <div class="row">
+        <button id="ocrBtn">Run OCR</button>
+        <button id="clearOcrBtn" class="ghost">Clear</button>
+      </div>
+      <div id="ocrStatus" class="muted small"></div>
+      <div id="itemsArea" class="stack" style="display:none">
+        <div class="row">
+          <input id="receiptTitle" placeholder="Store / note (optional)">
+          <input id="receiptDate" type="date">
+        </div>
+        <table class="table" id="itemsTable">
+          <thead>
+            <tr><th>Item</th><th class="right">Price</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div>
+          <div class="muted small">Assign selected row to:</div>
+          <div id="assignChips" class="chips"></div>
+        </div>
+        <div class="row sticky-bottom">
+          <button id="saveReceiptBtn">Save receipt</button>
+          <span id="saveMsg" class="muted small"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spreadsheet: who owes me -->
+    <div class="stack">
+      <h3>Who owes me</h3>
+      <table class="table" id="oweTable">
+        <thead><tr><th>Friend</th><th class="right">Amount</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="muted small">Positive = they owe you. (Calculated from items you paid and assigned to them.)</div>
+    </div>
+
+    <!-- All receipts (yours) -->
+    <div class="stack">
+      <h3>Your receipts</h3>
+      <div id="myReceipts" class="grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Tesseract for on-device OCR (free) -->
+<script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<!-- Firebase SDKs (v10) -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
+         signInWithEmailAndPassword, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion,
+         collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBllp5zRTzOo_v3MJsHDrO_QOoS3Rk7pUQ",
+  authDomain: "sayin-fa2ae.firebaseapp.com",
+  databaseURL: "https://sayin-fa2ae-default-rtdb.firebaseio.com",
+  projectId: "sayin-fa2ae",
+  storageBucket: "sayin-fa2ae.firebasestorage.app",
+  messagingSenderId: "298446170978",
+  appId: "1:298446170978:web:d240f969f51a91cea9da3b",
+  measurementId: "G-09LWXSVLJ0"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// ---------- UI helpers ----------
+const $ = sel => document.querySelector(sel);
+const state = {
+  me: null,
+  friends: [],             // array of emails
+  items: [],               // [{desc, price, assignedTo:Set<email>}]
+  selectedRow: -1,
+};
+
+// ---------- Auth UI ----------
+const authCard = $("#authCard");
+const appCard = $("#appCard");
+$("#toLogin").onclick = ()=>{ $("#loginForm").style.display="grid"; $("#signupForm").style.display="none"; };
+$("#toSignup").onclick = ()=>{ $("#loginForm").style.display="none"; $("#signupForm").style.display="grid"; };
+
+$("#loginBtn").onclick = async () => {
+  $("#authMsg").textContent = "";
+  try {
+    await signInWithEmailAndPassword(auth, $("#loginEmail").value, $("#loginPass").value);
+  } catch (e) { $("#authMsg").textContent = e.message; }
+};
+$("#signupBtn").onclick = async () => {
+  $("#authMsg").textContent = "";
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, $("#signupEmail").value, $("#signupPass").value);
+    await updateProfile(cred.user, { displayName: $("#signupName").value || "" });
+    await setDoc(doc(db, "users", cred.user.uid), {
+      email: cred.user.email,
+      displayName: cred.user.displayName || "",
+      friends: [],
+      createdAt: serverTimestamp(),
+    });
+  } catch (e) { $("#authMsg").textContent = e.message; }
+};
+$("#logoutBtn").onclick = ()=> signOut(auth);
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    state.me = null;
+    authCard.style.display = "grid";
+    appCard.style.display = "none";
+    return;
+  }
+  state.me = user;
+  $("#hello").textContent = `Hi, ${user.displayName || "friend"} 👋`;
+  $("#myEmail").textContent = user.email;
+  authCard.style.display = "none";
+  appCard.style.display = "grid";
+
+  // ensure profile doc exists
+  const meRef = doc(db, "users", user.uid);
+  const meSnap = await getDoc(meRef);
+  if (!meSnap.exists()) {
+    await setDoc(meRef, { email: user.email, displayName: user.displayName || "", friends: [], createdAt: serverTimestamp() });
+  }
+
+  // friends
+  onSnapshot(meRef, (snap)=>{
+    const data = snap.data() || {};
+    state.friends = Array.isArray(data.friends) ? data.friends : [];
+    renderFriends();
+    renderAssignChips();
+  });
+
+  // receipts list (mine as payer)
+  const q = query(collection(db, "receipts"), where("payerUid","==", user.uid), orderBy("createdAt","desc"));
+  onSnapshot(q, (col)=>{
+    const list = [];
+    col.forEach(d => list.push({ id:d.id, ...d.data() }));
+    renderMyReceipts(list);
+    renderOweTable(list); // recompute "who owes me"
+  });
+});
+
+// ---------- Friends ----------
+$("#addFriendBtn").onclick = async () => {
+  const email = $("#friendEmail").value.trim().toLowerCase();
+  if (!email || !email.includes("@")) return;
+  $("#friendEmail").value = "";
+  const meRef = doc(db,"users", state.me.uid);
+  await updateDoc(meRef, { friends: arrayUnion(email) });
+};
+function renderFriends(){
+  const el = $("#friendList");
+  el.innerHTML = "";
+  [state.me.email, ...state.friends].forEach((em,i)=>{
+    const div = document.createElement("div");
+    div.className = "chip" + (i===0 ? " active": "");
+    div.textContent = (i===0?"Me: ":"")+em;
+    el.appendChild(div);
+  });
+}
+
+// ---------- OCR & items ----------
+$("#clearOcrBtn").onclick = ()=>{
+  state.items = [];
+  $("#itemsArea").style.display = "none";
+  $("#itemsTable tbody").innerHTML = "";
+  $("#ocrStatus").textContent = "";
+};
+$("#ocrBtn").onclick = async ()=>{
+  const f = $("#fileInput").files?.[0];
+  if (!f){ $("#ocrStatus").textContent = "Choose an image first."; return; }
+  $("#ocrStatus").textContent = "Running OCR (on your device)…";
+  try {
+    const { data } = await Tesseract.recognize(f, 'eng', { logger: m => { if(m.status) $("#ocrStatus").textContent = `OCR: ${m.status} ${m.progress?Math.round(m.progress*100)+'%':''}`; }});
+    const text = data.text || "";
+    state.items = parseReceipt(text);
+    if (state.items.length === 0) {
+      // fallback: create one editable line with total
+      state.items = [{desc:"Item 1", price:0, assignedTo:new Set([state.me.email])}];
+    }
+    // default date today
+    $("#receiptDate").value = new Date().toISOString().slice(0,10);
+    $("#itemsArea").style.display = "grid";
+    renderItems();
+    renderAssignChips();
+    $("#ocrStatus").textContent = "OCR complete. Tap rows to edit and assign.";
+  } catch (e) {
+    $("#ocrStatus").textContent = "OCR error: " + e.message;
+  }
+};
+
+function parseReceipt(txt){
+  const lines = txt.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const skip = /subtotal|tax|tip|total|balance|change|cash|credit/i;
+  const out = [];
+  for (const line of lines){
+    if (skip.test(line)) continue;
+    // capture "desc ... 12.34"
+    const m = line.match(/^(.*?)[\s_$]*(-?\d+\.\d{2})\s*$/);
+    if (m){
+      const desc = m[1].replace(/\s{2,}/g,' ').trim() || "Item";
+      const price = parseFloat(m[2]);
+      if (!isNaN(price) && price>0){
+        out.push({ desc, price, assignedTo: new Set([state.me.email]) });
+      }
+    }
+  }
+  return out.slice(0,50); // avoid accidental huge parses
+}
+
+function renderItems(){
+  const tbody = $("#itemsTable tbody");
+  tbody.innerHTML = "";
+  state.items.forEach((it, idx)=>{
+    const tr = document.createElement("tr");
+    tr.style.cursor="pointer";
+    if (idx === state.selectedRow) tr.style.background="#0f1722";
+    const desc = document.createElement("td");
+    desc.innerHTML = `<input value="${it.desc}" data-i="${idx}" data-k="desc">`;
+    const price = document.createElement("td");
+    price.className="right";
+    price.innerHTML = `<input value="${it.price.toFixed(2)}" data-i="${idx}" data-k="price" inputmode="decimal">`;
+    tr.onclick = ()=>{ state.selectedRow = idx; renderItems(); renderAssignChips(); };
+    tr.appendChild(desc); tr.appendChild(price);
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll("input").forEach(inp=>{
+    inp.oninput = (e)=>{
+      const i = +e.target.dataset.i, k = e.target.dataset.k;
+      if (k==="desc") state.items[i].desc = e.target.value;
+      else if (k==="price") {
+        const v = parseFloat(e.target.value.replace(/[^\d.]/g,''));
+        state.items[i].price = isNaN(v)?0:v;
+      }
+    };
+  });
+}
+
+function renderAssignChips(){
+  const el = $("#assignChips");
+  el.innerHTML = "";
+  const row = state.items[state.selectedRow] || null;
+  const everyone = [state.me.email, ...state.friends];
+  everyone.forEach(email=>{
+    const chip = document.createElement("div");
+    chip.className = "chip";
+    chip.textContent = email===state.me.email?`Me (${email})`:email;
+    const active = row && row.assignedTo.has(email);
+    if (active) chip.classList.add("active");
+    chip.onclick = ()=>{
+      if (!row) return;
+      if (row.assignedTo.has(email)) row.assignedTo.delete(email);
+      else row.assignedTo.add(email);
+      renderAssignChips();
+    };
+    el.appendChild(chip);
+  });
+}
+
+// ---------- Save receipt ----------
+$("#saveReceiptBtn").onclick = async ()=>{
+  $("#saveMsg").textContent = "Saving…";
+  try {
+    // upload image (private path)
+    const f = $("#fileInput").files?.[0];
+    let imageUrl = null;
+    if (f){
+      const key = `receipts/${state.me.uid}/${Date.now()}-${f.name}`;
+      const r = ref(storage, key);
+      await uploadBytes(r, f);
+      imageUrl = await getDownloadURL(r);
+    }
+    // serialize items
+    const items = state.items.map(it=>({
+      desc: it.desc,
+      price: Number(it.price.toFixed(2)),
+      assignedTo: Array.from(it.assignedTo)
+    })).filter(it=>it.price>0 && it.assignedTo.length>0);
+
+    const docRef = await addDoc(collection(db,"receipts"),{
+      title: $("#receiptTitle").value || "",
+      date: $("#receiptDate").value || new Date().toISOString().slice(0,10),
+      payerUid: state.me.uid,
+      payerEmail: state.me.email,
+      imageUrl: imageUrl,
+      items,
+      createdAt: serverTimestamp(),
+      // Only you for now; later you can include friends' UIDs to share
+      allowed_uids: [state.me.uid]
+    });
+    $("#saveMsg").textContent = "Saved ✔";
+    // clear UI
+    $("#fileInput").value = "";
+    $("#itemsArea").style.display = "none";
+    state.items = [];
+  } catch (e) {
+    $("#saveMsg").textContent = "Error: " + e.message;
+  }
+};
+
+// ---------- Owe table (who owes ME) ----------
+function renderOweTable(receipts){
+  // Only look at receipts I paid
+  const map = new Map(); // friendEmail -> amount
+  for (const rc of receipts){
+    if (rc.payerUid !== state.me.uid) continue;
+    for (const it of (rc.items||[])){
+      const participants = it.assignedTo || [];
+      const share = participants.length ? (it.price / participants.length) : 0;
+      for (const p of participants){
+        if (p === state.me.email) continue; // I don't owe myself
+        map.set(p, +( (map.get(p)||0) + share ).toFixed(2));
+      }
+    }
+  }
+  // render
+  const tbody = $("#oweTable tbody");
+  tbody.innerHTML = "";
+  const entries = Array.from(map.entries()).sort((a,b)=>a[0].localeCompare(b[0]));
+  if (entries.length===0){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="muted">No balances yet</td><td></td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+  for (const [email, amt] of entries){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${email}</td><td class="right">${amt.toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+// ---------- My receipts list ----------
+function renderMyReceipts(list){
+  const box = $("#myReceipts"); box.innerHTML = "";
+  list.forEach(rc=>{
+    const div = document.createElement("div");
+    div.className="card stack";
+    const total = (rc.items||[]).reduce((s,it)=>s+Number(it.price||0),0);
+    div.innerHTML = `
+      <div class="row">
+        <div><div class="badge">You paid</div><h3>${rc.title||"Receipt"}</h3></div>
+        <div class="muted small" style="text-align:right">${rc.date||""}<br>Total: $${total.toFixed(2)}</div>
+      </div>
+      <div class="small muted">${(rc.items||[]).length} items${rc.imageUrl? " • image stored":""}</div>
+    `;
+    box.appendChild(div);
+  });
+}
+</script>
+</body>
+</html>
