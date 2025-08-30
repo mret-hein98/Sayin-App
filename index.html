@@ -5,16 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
 <title>Who Owes What</title>
 <style>
-  :root { --bg:#0b0f14; --card:#121821; --ink:#e9eef7; --muted:#9bb0c9; --acc:#4ea8ff; --warn:#ffb54e; }
-  *{box-sizing:border-box;font-family:system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;}
-  body{margin:0;background:var(--bg);color:var(--ink);}
-  .wrap{max-width:720px;margin:0 auto;padding:16px;}
-  .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;padding:14px;}
-  h1,h2,h3{margin:.2em 0 .5em 0;}
-  input,button,select,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid #2b3647;background:#0e141d;color:var(--ink);}
+  :root { --bg:#0b0f14; --card:#121821; --ink:#e9eef7; --muted:#9bb0c9; --acc:#4ea8ff; --line:#223046; }
+  *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
+  body{margin:0;background:var(--bg);color:var(--ink)}
+  .wrap{max-width:820px;margin:0 auto;padding:14px}
+  .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;padding:14px}
+  h1,h2,h3{margin:.2em 0 .5em}
+  input,button,select{width:100%;padding:12px;border-radius:10px;border:1px solid #2b3647;background:#0e141d;color:var(--ink)}
   button{background:var(--acc);border:none;color:#001322;font-weight:700;cursor:pointer}
   button.ghost{background:transparent;border:1px solid #2b3647;color:var(--ink)}
-  label{font-size:.9rem;color:var(--muted)}
   .row{display:flex;gap:10px;align-items:center}
   .row>*{flex:1}
   .stack{display:grid;gap:12px}
@@ -22,15 +21,17 @@
   .chip{padding:8px 10px;border:1px solid #2b3647;border-radius:999px;font-size:.9rem;cursor:pointer}
   .chip.active{background:#1b2533;border-color:#39567a}
   .muted{color:var(--muted);font-size:.9rem}
-  .grid{display:grid;gap:8px}
-  .table{width:100%;border-collapse:collapse}
-  .table th,.table td{padding:10px;border-bottom:1px solid #223046;text-align:left;font-size:.95rem}
-  .right{text-align:right}
-  .sticky-bottom{position:sticky;bottom:0;background:linear-gradient(180deg, transparent, rgba(11,15,20,.9));padding-top:10px}
-  .badge{font-size:.8rem;padding:4px 8px;border-radius:999px;background:#16202e;color:#b9d6ff}
-  .danger{color:#ff9e9e}
-  .success{color:#b7ffbf}
   .small{font-size:.85rem}
+  .table{width:100%;border-collapse:collapse}
+  .table th,.table td{padding:10px;border-bottom:1px solid var(--line);text-align:left;font-size:.95rem}
+  .right{text-align:right}
+  .tabbar{display:flex;gap:8px}
+  .tabbar button{flex:1}
+  .hidden{display:none}
+  .badge{font-size:.75rem;padding:4px 8px;border-radius:999px;background:#16202e;color:#b9d6ff}
+  .warn{color:#ffc98f}
+  .danger{color:#ff9e9e}
+  .ok{color:#b7ffbf}
 </style>
 </head>
 <body>
@@ -49,7 +50,7 @@
         <label>Password</label><input id="loginPass" type="password" autocomplete="current-password">
         <button id="loginBtn">Log in</button>
       </div>
-      <div id="signupForm" class="stack" style="display:none">
+      <div id="signupForm" class="stack hidden">
         <label>Display name</label><input id="signupName" type="text">
         <label>Email</label><input id="signupEmail" type="email" autocomplete="email">
         <label>Password</label><input id="signupPass" type="password" autocomplete="new-password">
@@ -60,84 +61,111 @@
   </div>
 
   <!-- APP -->
-  <div id="appCard" class="card stack" style="display:none">
+  <div id="appCard" class="card stack hidden">
     <div class="row">
       <div><h3 id="hello"></h3><div class="muted small" id="myEmail"></div></div>
-      <div style="flex:0">
-        <button id="logoutBtn" class="ghost">Log out</button>
-      </div>
+      <div style="flex:0"><button id="logoutBtn" class="ghost">Log out</button></div>
     </div>
 
-    <!-- Friends -->
-    <div class="stack">
-      <h3>Friends</h3>
-      <div class="row">
-        <input id="friendEmail" type="email" placeholder="friend@email.com (email only; no invite needed)">
-        <button id="addFriendBtn">Add</button>
-      </div>
-      <div id="friendList" class="chips"></div>
-      <div class="muted small">Friends are stored under your profile. You can assign items to any of them. (They’ll see your receipts only if you later add their UID to a receipt.)</div>
+    <!-- Tabs -->
+    <div class="tabbar">
+      <button data-tab="tab-receipts" class="ghost" id="tabBtnReceipts">Receipts</button>
+      <button data-tab="tab-balances" class="ghost" id="tabBtnBalances">Balances</button>
+      <button data-tab="tab-friends" class="ghost" id="tabBtnFriends">Friends & Invites</button>
     </div>
 
-    <!-- Upload & OCR -->
-    <div class="stack">
-      <h3>Upload receipt (image)</h3>
-      <input id="fileInput" type="file" accept="image/*" />
-      <div class="row">
-        <button id="ocrBtn">Run OCR</button>
-        <button id="clearOcrBtn" class="ghost">Clear</button>
-      </div>
-      <div id="ocrStatus" class="muted small"></div>
-      <div id="itemsArea" class="stack" style="display:none">
+    <!-- RECEIPTS -->
+    <section id="tab-receipts" class="stack">
+      <!-- Upload & OCR -->
+      <div class="stack">
+        <h3>New receipt</h3>
+        <input id="fileInput" type="file" accept="image/*">
         <div class="row">
-          <input id="receiptTitle" placeholder="Store / note (optional)">
+          <input id="receiptTitle" placeholder="Store / note">
           <input id="receiptDate" type="date">
         </div>
-        <table class="table" id="itemsTable">
-          <thead>
-            <tr><th>Item</th><th class="right">Price</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <div>
-          <div class="muted small">Assign selected row to:</div>
-          <div id="assignChips" class="chips"></div>
+        <div class="row">
+          <select id="payerSelect"></select>
+          <button id="ocrBtn">Run OCR</button>
+          <button id="clearOcrBtn" class="ghost">Clear</button>
         </div>
-        <div class="row sticky-bottom">
-          <button id="saveReceiptBtn">Save receipt</button>
-          <span id="saveMsg" class="muted small"></span>
+        <div id="ocrStatus" class="muted small"></div>
+
+        <div id="itemsArea" class="stack hidden">
+          <table class="table" id="itemsTable">
+            <thead><tr><th>Item</th><th class="right">Price</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <div>
+            <div class="muted small">Assign selected row to:</div>
+            <div id="assignChips" class="chips"></div>
+          </div>
+          <div class="row">
+            <button id="saveReceiptBtn">Save receipt</button>
+            <span id="saveMsg" class="muted small"></span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Spreadsheet: who owes me -->
-    <div class="stack">
+      <!-- Your receipts -->
+      <div class="stack">
+        <h3>Your receipts (you are payer)</h3>
+        <div id="myReceipts" class="stack"></div>
+      </div>
+    </section>
+
+    <!-- BALANCES -->
+    <section id="tab-balances" class="stack hidden">
       <h3>Who owes me</h3>
       <table class="table" id="oweTable">
         <thead><tr><th>Friend</th><th class="right">Amount</th></tr></thead>
         <tbody></tbody>
       </table>
-      <div class="muted small">Positive = they owe you. (Calculated from items you paid and assigned to them.)</div>
-    </div>
+      <div class="muted small">Positive numbers mean they owe you. Computed from receipts where <b>you</b> are marked as payer.</div>
+    </section>
 
-    <!-- All receipts (yours) -->
-    <div class="stack">
-      <h3>Your receipts</h3>
-      <div id="myReceipts" class="grid"></div>
-    </div>
+    <!-- FRIENDS & INVITES -->
+    <section id="tab-friends" class="stack hidden">
+      <!-- Invite -->
+      <div class="stack">
+        <h3>Invite a friend</h3>
+        <div class="row">
+          <input id="inviteEmail" type="email" placeholder="friend@email.com">
+          <button id="sendInviteBtn">Send invite</button>
+        </div>
+        <div class="muted small">They’ll see the invite when they sign in with that email. You can also copy an invite link.</div>
+      </div>
+
+      <!-- My friends -->
+      <div class="stack">
+        <h3>My friends</h3>
+        <div id="friendList" class="stack"></div>
+        <div class="muted small">Remove friend breaks the link for both of you (client-only; no fees).</div>
+      </div>
+
+      <!-- Invites I sent -->
+      <div class="stack">
+        <h3>Invites I sent</h3>
+        <div id="sentInvites" class="stack"></div>
+      </div>
+
+      <!-- Invites to me -->
+      <div class="stack">
+        <h3>Invites to me</h3>
+        <div id="recvInvites" class="stack"></div>
+      </div>
+    </section>
   </div>
 </div>
 
-<!-- Tesseract for on-device OCR (free) -->
 <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
 
-<!-- Firebase SDKs (v10) -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
          signInWithEmailAndPassword, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion,
-         collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, collection,
+         addDoc, onSnapshot, query, where, orderBy, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -151,131 +179,259 @@ const firebaseConfig = {
   appId: "1:298446170978:web:d240f969f51a91cea9da3b",
   measurementId: "G-09LWXSVLJ0"
 };
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// ---------- UI helpers ----------
-const $ = sel => document.querySelector(sel);
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const nowDate = () => new Date().toISOString().slice(0,10);
 const state = {
   me: null,
-  friends: [],             // array of emails
-  items: [],               // [{desc, price, assignedTo:Set<email>}]
-  selectedRow: -1,
+  friends: [],          // [{uid,email,displayName,fid}]
+  items: [],            // [{desc,price,assignedTo:Set<email>}]
+  selectedRow: 0,
+  myReceipts: [],
+  sentInvites: [],      // docs I sent
+  recvInvites: []       // docs to me
 };
 
-// ---------- Auth UI ----------
-const authCard = $("#authCard");
-const appCard = $("#appCard");
-$("#toLogin").onclick = ()=>{ $("#loginForm").style.display="grid"; $("#signupForm").style.display="none"; };
-$("#toSignup").onclick = ()=>{ $("#loginForm").style.display="none"; $("#signupForm").style.display="grid"; };
+// ---------- tabs ----------
+function showTab(id){
+  ["tab-receipts","tab-balances","tab-friends"].forEach(t=>{
+    const el = $("#"+t);
+    el.classList.toggle("hidden", t !== id);
+  });
+}
+["tabBtnReceipts","tabBtnBalances","tabBtnFriends"].forEach(id=>{
+  $("#"+id).onclick = (e)=> showTab(e.target.dataset.tab);
+});
 
-$("#loginBtn").onclick = async () => {
+// ---------- auth ui ----------
+$("#toLogin").onclick = ()=>{ $("#loginForm").classList.remove("hidden"); $("#signupForm").classList.add("hidden"); };
+$("#toSignup").onclick = ()=>{ $("#signupForm").classList.remove("hidden"); $("#loginForm").classList.add("hidden"); };
+$("#loginBtn").onclick = async ()=>{
   $("#authMsg").textContent = "";
-  try {
-    await signInWithEmailAndPassword(auth, $("#loginEmail").value, $("#loginPass").value);
-  } catch (e) { $("#authMsg").textContent = e.message; }
+  try{ await signInWithEmailAndPassword(auth, $("#loginEmail").value.trim(), $("#loginPass").value); }
+  catch(e){ $("#authMsg").textContent = e.message; }
 };
-$("#signupBtn").onclick = async () => {
+$("#signupBtn").onclick = async ()=>{
   $("#authMsg").textContent = "";
-  try {
-    const cred = await createUserWithEmailAndPassword(auth, $("#signupEmail").value, $("#signupPass").value);
+  try{
+    const cred = await createUserWithEmailAndPassword(auth, $("#signupEmail").value.trim(), $("#signupPass").value);
     await updateProfile(cred.user, { displayName: $("#signupName").value || "" });
-    await setDoc(doc(db, "users", cred.user.uid), {
-      email: cred.user.email,
-      displayName: cred.user.displayName || "",
-      friends: [],
-      createdAt: serverTimestamp(),
+    await setDoc(doc(db,"users",cred.user.uid), {
+      email: cred.user.email, displayName: cred.user.displayName || "", createdAt: serverTimestamp()
     });
-  } catch (e) { $("#authMsg").textContent = e.message; }
+  }catch(e){ $("#authMsg").textContent = e.message; }
 };
 $("#logoutBtn").onclick = ()=> signOut(auth);
 
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
+onAuthStateChanged(auth, async (user)=>{
+  if(!user){
     state.me = null;
-    authCard.style.display = "grid";
-    appCard.style.display = "none";
+    $("#authCard").classList.remove("hidden");
+    $("#appCard").classList.add("hidden");
     return;
   }
   state.me = user;
   $("#hello").textContent = `Hi, ${user.displayName || "friend"} 👋`;
   $("#myEmail").textContent = user.email;
-  authCard.style.display = "none";
-  appCard.style.display = "grid";
+  $("#authCard").classList.add("hidden");
+  $("#appCard").classList.remove("hidden");
+  $("#receiptDate").value = nowDate();
 
-  // ensure profile doc exists
-  const meRef = doc(db, "users", user.uid);
-  const meSnap = await getDoc(meRef);
-  if (!meSnap.exists()) {
-    await setDoc(meRef, { email: user.email, displayName: user.displayName || "", friends: [], createdAt: serverTimestamp() });
+  // ensure profile exists
+  const meRef = doc(db,"users",user.uid);
+  const snap = await getDoc(meRef);
+  if(!snap.exists()){
+    await setDoc(meRef, { email:user.email, displayName:user.displayName||"", createdAt: serverTimestamp() });
   }
 
-  // friends
-  onSnapshot(meRef, (snap)=>{
-    const data = snap.data() || {};
-    state.friends = Array.isArray(data.friends) ? data.friends : [];
+  // live friends (via friendships)
+  const fq = query(collection(db,"friendships"), where("uids","array-contains", user.uid));
+  onSnapshot(fq, (qs)=>{
+    state.friends = [];
+    qs.forEach(d=>{
+      const f = d.data();
+      if (f.status !== "active") return;
+      const idx = f.uids[0] === user.uid ? 1 : 0;
+      state.friends.push({ uid: f.uids[idx], email: f.emails[idx], displayName: f.displayNames?.[idx] || "", fid: d.id });
+    });
     renderFriends();
+    fillPayerSelect();
     renderAssignChips();
+    // Recompute balances whenever friends change
+    renderOweTable(state.myReceipts);
   });
 
-  // receipts list (mine as payer)
-  const q = query(collection(db, "receipts"), where("payerUid","==", user.uid), orderBy("createdAt","desc"));
-  onSnapshot(q, (col)=>{
-    const list = [];
-    col.forEach(d => list.push({ id:d.id, ...d.data() }));
-    renderMyReceipts(list);
-    renderOweTable(list); // recompute "who owes me"
+  // invites I sent
+  const sentQ = query(collection(db,"invites"), where("fromUid","==", user.uid), orderBy("createdAt","desc"));
+  onSnapshot(sentQ, qs=>{
+    state.sentInvites = qs.docs.map(d=>({ id:d.id, ...d.data() }));
+    renderSentInvites();
   });
+
+  // invites to me (by email)
+  const recvQ = query(collection(db,"invites"), where("toEmail","==", user.email), orderBy("createdAt","desc"));
+  onSnapshot(recvQ, qs=>{
+    state.recvInvites = qs.docs.map(d=>({ id:d.id, ...d.data() }));
+    renderRecvInvites();
+  });
+
+  // receipts where I am payer
+  const rq = query(collection(db,"receipts"), where("payerUid","==", user.uid), orderBy("createdAt","desc"));
+  onSnapshot(rq, qs=>{
+    state.myReceipts = qs.docs.map(d=>({ id:d.id, ...d.data() }));
+    renderMyReceipts(state.myReceipts);
+    renderOweTable(state.myReceipts);
+  });
+
+  // default to receipts tab
+  showTab("tab-receipts");
 });
 
-// ---------- Friends ----------
-$("#addFriendBtn").onclick = async () => {
-  const email = $("#friendEmail").value.trim().toLowerCase();
-  if (!email || !email.includes("@")) return;
-  $("#friendEmail").value = "";
-  const meRef = doc(db,"users", state.me.uid);
-  await updateDoc(meRef, { friends: arrayUnion(email) });
+// ---------- friends & invites ----------
+$("#sendInviteBtn").onclick = async ()=>{
+  const toEmail = $("#inviteEmail").value.trim().toLowerCase();
+  if(!toEmail || !toEmail.includes("@")) return;
+  $("#inviteEmail").value = "";
+  const docRef = await addDoc(collection(db,"invites"),{
+    fromUid: state.me.uid,
+    fromEmail: state.me.email,
+    toEmail,
+    status: "pending",
+    createdAt: serverTimestamp()
+  });
+  // show copyable link
+  const link = `${location.origin}${location.pathname}?invite=${docRef.id}`;
+  alert(`Invite created.\nShare this link with them:\n${link}`);
 };
+
+// accept / decline
+async function acceptInvite(inv){
+  // create friendship
+  await addDoc(collection(db,"friendships"),{
+    uids: [inv.fromUid, state.me.uid],
+    emails: [inv.fromEmail, state.me.email],
+    displayNames: [null, state.me.displayName || ""],
+    status: "active",
+    allowed_uids: [inv.fromUid, state.me.uid],
+    createdAt: serverTimestamp()
+  });
+  // mark invite accepted
+  await updateDoc(doc(db,"invites", inv.id), {
+    status:"accepted",
+    toUid: state.me.uid,
+    acceptedAt: serverTimestamp()
+  });
+}
+async function declineInvite(inv){
+  await updateDoc(doc(db,"invites", inv.id), { status:"declined" });
+}
+
+// remove friend
+async function removeFriend(fid){
+  await deleteDoc(doc(db,"friendships", fid)); // either party can delete
+}
+
 function renderFriends(){
-  const el = $("#friendList");
-  el.innerHTML = "";
-  [state.me.email, ...state.friends].forEach((em,i)=>{
+  const box = $("#friendList"); box.innerHTML = "";
+  if(state.friends.length===0){ box.innerHTML = `<div class="muted">No friends yet.</div>`; return; }
+  state.friends.forEach(f=>{
     const div = document.createElement("div");
-    div.className = "chip" + (i===0 ? " active": "");
-    div.textContent = (i===0?"Me: ":"")+em;
-    el.appendChild(div);
+    div.className="card row";
+    div.innerHTML = `
+      <div style="flex:2">
+        <div><b>${f.displayName || f.email}</b></div>
+        <div class="muted small">${f.email}</div>
+      </div>
+      <div style="flex:1;text-align:right">
+        <button class="ghost" data-fid="${f.fid}">Remove</button>
+      </div>`;
+    div.querySelector("button").onclick = ()=> removeFriend(f.fid);
+    box.appendChild(div);
   });
 }
 
-// ---------- OCR & items ----------
+function renderSentInvites(){
+  const box = $("#sentInvites"); box.innerHTML = "";
+  if(state.sentInvites.length===0){ box.innerHTML = `<div class="muted">No invites sent.</div>`; return; }
+  state.sentInvites.forEach(inv=>{
+    const link = `${location.origin}${location.pathname}?invite=${inv.id}`;
+    const st = inv.status;
+    const div = document.createElement("div");
+    div.className="card row";
+    div.innerHTML = `
+      <div style="flex:3">
+        <div><b>To:</b> ${inv.toEmail}</div>
+        <div class="small muted">Status: ${st}</div>
+        <div class="small"><a href="${link}" target="_blank">Invite link</a></div>
+      </div>
+      <div style="flex:1;text-align:right">
+        <button class="ghost" data-id="${inv.id}">Delete</button>
+      </div>`;
+    div.querySelector("button").onclick = ()=> deleteDoc(doc(db,"invites", inv.id));
+    box.appendChild(div);
+  });
+}
+
+function renderRecvInvites(){
+  const box = $("#recvInvites"); box.innerHTML = "";
+  const list = state.recvInvites;
+  if(list.length===0){ box.innerHTML = `<div class="muted">No invites.</div>`; return; }
+  list.forEach(inv=>{
+    const div = document.createElement("div");
+    div.className="card row";
+    div.innerHTML = `
+      <div style="flex:3">
+        <div><b>From:</b> ${inv.fromEmail}</div>
+        <div class="small muted">Status: ${inv.status}</div>
+      </div>
+      <div style="flex:1;text-align:right">
+        ${(inv.status==="pending")
+          ? `<div class="row">
+               <button class="ghost" data-acc="${inv.id}">Accept</button>
+               <button class="ghost" data-dec="${inv.id}">Decline</button>
+             </div>`
+          : `<span class="small ${inv.status==="accepted"?"ok":"danger"}">${inv.status}</span>`
+        }
+      </div>`;
+    if(inv.status==="pending"){
+      div.querySelector('[data-acc]').onclick = ()=> acceptInvite(inv);
+      div.querySelector('[data-dec]').onclick = ()=> declineInvite(inv);
+    }
+    box.appendChild(div);
+  });
+}
+
+// ---------- receipt OCR + items ----------
 $("#clearOcrBtn").onclick = ()=>{
   state.items = [];
-  $("#itemsArea").style.display = "none";
+  $("#itemsArea").classList.add("hidden");
   $("#itemsTable tbody").innerHTML = "";
   $("#ocrStatus").textContent = "";
 };
+
 $("#ocrBtn").onclick = async ()=>{
   const f = $("#fileInput").files?.[0];
-  if (!f){ $("#ocrStatus").textContent = "Choose an image first."; return; }
-  $("#ocrStatus").textContent = "Running OCR (on your device)…";
-  try {
-    const { data } = await Tesseract.recognize(f, 'eng', { logger: m => { if(m.status) $("#ocrStatus").textContent = `OCR: ${m.status} ${m.progress?Math.round(m.progress*100)+'%':''}`; }});
+  if(!f){ $("#ocrStatus").textContent = "Choose an image first."; return; }
+  $("#ocrStatus").textContent = "OCR running (on your device)…";
+  try{
+    const { data } = await Tesseract.recognize(f,'eng',{logger: m=>{ if(m.status) $("#ocrStatus").textContent = `OCR: ${m.status} ${m.progress?Math.round(m.progress*100)+'%':''}`; }});
     const text = data.text || "";
     state.items = parseReceipt(text);
-    if (state.items.length === 0) {
-      // fallback: create one editable line with total
+    if(state.items.length===0){
       state.items = [{desc:"Item 1", price:0, assignedTo:new Set([state.me.email])}];
     }
-    // default date today
-    $("#receiptDate").value = new Date().toISOString().slice(0,10);
-    $("#itemsArea").style.display = "grid";
+    state.selectedRow = 0; // auto-select first row (fixes 'not working' confusion)
+    $("#receiptDate").value = nowDate();
+    $("#itemsArea").classList.remove("hidden");
     renderItems();
     renderAssignChips();
-    $("#ocrStatus").textContent = "OCR complete. Tap rows to edit and assign.";
-  } catch (e) {
+    $("#ocrStatus").textContent = "OCR complete. Tap a row to edit & assign.";
+  }catch(e){
     $("#ocrStatus").textContent = "OCR error: " + e.message;
   }
 };
@@ -286,40 +442,36 @@ function parseReceipt(txt){
   const out = [];
   for (const line of lines){
     if (skip.test(line)) continue;
-    // capture "desc ... 12.34"
     const m = line.match(/^(.*?)[\s_$]*(-?\d+\.\d{2})\s*$/);
-    if (m){
+    if(m){
       const desc = m[1].replace(/\s{2,}/g,' ').trim() || "Item";
       const price = parseFloat(m[2]);
-      if (!isNaN(price) && price>0){
-        out.push({ desc, price, assignedTo: new Set([state.me.email]) });
+      if(!isNaN(price) && price>0){
+        out.push({desc, price, assignedTo: new Set([state.me.email])});
       }
     }
   }
-  return out.slice(0,50); // avoid accidental huge parses
+  return out.slice(0,50);
 }
 
 function renderItems(){
-  const tbody = $("#itemsTable tbody");
-  tbody.innerHTML = "";
+  const tbody = $("#itemsTable tbody"); tbody.innerHTML = "";
   state.items.forEach((it, idx)=>{
     const tr = document.createElement("tr");
-    tr.style.cursor="pointer";
-    if (idx === state.selectedRow) tr.style.background="#0f1722";
-    const desc = document.createElement("td");
-    desc.innerHTML = `<input value="${it.desc}" data-i="${idx}" data-k="desc">`;
-    const price = document.createElement("td");
-    price.className="right";
-    price.innerHTML = `<input value="${it.price.toFixed(2)}" data-i="${idx}" data-k="price" inputmode="decimal">`;
+    if(idx===state.selectedRow) tr.style.background="#0f1722";
+    const td1 = document.createElement("td");
+    td1.innerHTML = `<input value="${it.desc}" data-i="${idx}" data-k="desc">`;
+    const td2 = document.createElement("td");
+    td2.className = "right";
+    td2.innerHTML = `<input value="${it.price.toFixed(2)}" data-i="${idx}" data-k="price" inputmode="decimal">`;
     tr.onclick = ()=>{ state.selectedRow = idx; renderItems(); renderAssignChips(); };
-    tr.appendChild(desc); tr.appendChild(price);
-    tbody.appendChild(tr);
+    tbody.appendChild(tr); tr.appendChild(td1); tr.appendChild(td2);
   });
   tbody.querySelectorAll("input").forEach(inp=>{
     inp.oninput = (e)=>{
-      const i = +e.target.dataset.i, k = e.target.dataset.k;
-      if (k==="desc") state.items[i].desc = e.target.value;
-      else if (k==="price") {
+      const i = +e.target.dataset.i, k=e.target.dataset.k;
+      if(k==="desc") state.items[i].desc = e.target.value;
+      else {
         const v = parseFloat(e.target.value.replace(/[^\d.]/g,''));
         state.items[i].price = isNaN(v)?0:v;
       }
@@ -327,113 +479,116 @@ function renderItems(){
   });
 }
 
+function fillPayerSelect(){
+  const sel = $("#payerSelect"); sel.innerHTML = "";
+  const optMe = document.createElement("option");
+  optMe.value = JSON.stringify({email: state.me.email, uid: state.me.uid});
+  optMe.textContent = `Payer: Me (${state.me.email})`;
+  sel.appendChild(optMe);
+  state.friends.forEach(f=>{
+    const o = document.createElement("option");
+    o.value = JSON.stringify({email:f.email, uid:f.uid});
+    o.textContent = `Payer: ${f.email}`;
+    sel.appendChild(o);
+  });
+}
+
 function renderAssignChips(){
-  const el = $("#assignChips");
-  el.innerHTML = "";
+  const el = $("#assignChips"); el.innerHTML = "";
   const row = state.items[state.selectedRow] || null;
-  const everyone = [state.me.email, ...state.friends];
-  everyone.forEach(email=>{
+  const everyone = [{email:state.me.email}, ...state.friends.map(f=>({email:f.email}))];
+  everyone.forEach(({email})=>{
     const chip = document.createElement("div");
     chip.className = "chip";
     chip.textContent = email===state.me.email?`Me (${email})`:email;
-    const active = row && row.assignedTo.has(email);
-    if (active) chip.classList.add("active");
+    if(row && row.assignedTo.has(email)) chip.classList.add("active");
     chip.onclick = ()=>{
-      if (!row) return;
-      if (row.assignedTo.has(email)) row.assignedTo.delete(email);
-      else row.assignedTo.add(email);
+      if(!row) return;
+      if(row.assignedTo.has(email)) row.assignedTo.delete(email); else row.assignedTo.add(email);
       renderAssignChips();
     };
     el.appendChild(chip);
   });
 }
 
-// ---------- Save receipt ----------
+// save receipt
 $("#saveReceiptBtn").onclick = async ()=>{
   $("#saveMsg").textContent = "Saving…";
-  try {
-    // upload image (private path)
+  try{
     const f = $("#fileInput").files?.[0];
     let imageUrl = null;
-    if (f){
+    if(f){
       const key = `receipts/${state.me.uid}/${Date.now()}-${f.name}`;
       const r = ref(storage, key);
       await uploadBytes(r, f);
       imageUrl = await getDownloadURL(r);
     }
-    // serialize items
     const items = state.items.map(it=>({
       desc: it.desc,
       price: Number(it.price.toFixed(2)),
       assignedTo: Array.from(it.assignedTo)
     })).filter(it=>it.price>0 && it.assignedTo.length>0);
 
-    const docRef = await addDoc(collection(db,"receipts"),{
+    const payer = JSON.parse($("#payerSelect").value || "{}");
+    const payerUid = payer.uid || state.me.uid;
+    const payerEmail = payer.email || state.me.email;
+
+    await addDoc(collection(db,"receipts"),{
       title: $("#receiptTitle").value || "",
-      date: $("#receiptDate").value || new Date().toISOString().slice(0,10),
-      payerUid: state.me.uid,
-      payerEmail: state.me.email,
-      imageUrl: imageUrl,
+      date: $("#receiptDate").value || nowDate(),
+      payerUid, payerEmail,
       items,
+      imageUrl,
       createdAt: serverTimestamp(),
-      // Only you for now; later you can include friends' UIDs to share
-      allowed_uids: [state.me.uid]
+      allowed_uids: [payerUid] // keep private to the payer for now
     });
+
     $("#saveMsg").textContent = "Saved ✔";
-    // clear UI
-    $("#fileInput").value = "";
-    $("#itemsArea").style.display = "none";
+    $("#fileInput").value = ""; $("#itemsArea").classList.add("hidden");
     state.items = [];
-  } catch (e) {
+  }catch(e){
     $("#saveMsg").textContent = "Error: " + e.message;
   }
 };
 
-// ---------- Owe table (who owes ME) ----------
+// ---------- balances & receipts renderers ----------
 function renderOweTable(receipts){
-  // Only look at receipts I paid
-  const map = new Map(); // friendEmail -> amount
-  for (const rc of receipts){
-    if (rc.payerUid !== state.me.uid) continue;
-    for (const it of (rc.items||[])){
+  // Only receipts where I am the payer
+  const map = new Map(); // email -> amount owed to me
+  for(const rc of receipts){
+    if(rc.payerUid !== state.me.uid) continue;
+    for(const it of (rc.items||[])){
       const participants = it.assignedTo || [];
-      const share = participants.length ? (it.price / participants.length) : 0;
-      for (const p of participants){
+      const share = participants.length ? (Number(it.price||0)/participants.length) : 0;
+      for(const p of participants){
         if (p === state.me.email) continue; // I don't owe myself
-        map.set(p, +( (map.get(p)||0) + share ).toFixed(2));
+        map.set(p, +((map.get(p)||0)+share).toFixed(2));
       }
     }
   }
-  // render
-  const tbody = $("#oweTable tbody");
-  tbody.innerHTML = "";
+  const tbody = $("#oweTable tbody"); tbody.innerHTML = "";
   const entries = Array.from(map.entries()).sort((a,b)=>a[0].localeCompare(b[0]));
-  if (entries.length===0){
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td class="muted">No balances yet</td><td></td>`;
-    tbody.appendChild(tr);
-    return;
-  }
-  for (const [email, amt] of entries){
+  if(entries.length===0){ tbody.innerHTML = `<tr><td class="muted">No balances yet</td><td></td></tr>`; return; }
+  for(const [email, amt] of entries){
     const tr = document.createElement("tr");
     tr.innerHTML = `<td>${email}</td><td class="right">${amt.toFixed(2)}</td>`;
     tbody.appendChild(tr);
   }
 }
 
-// ---------- My receipts list ----------
 function renderMyReceipts(list){
   const box = $("#myReceipts"); box.innerHTML = "";
+  if(list.length===0){ box.innerHTML = `<div class="muted">No receipts yet.</div>`; return; }
   list.forEach(rc=>{
+    const total = (rc.items||[]).reduce((s,it)=>s+Number(it.price||0),0);
     const div = document.createElement("div");
     div.className="card stack";
-    const total = (rc.items||[]).reduce((s,it)=>s+Number(it.price||0),0);
     div.innerHTML = `
       <div class="row">
         <div><div class="badge">You paid</div><h3>${rc.title||"Receipt"}</h3></div>
         <div class="muted small" style="text-align:right">${rc.date||""}<br>Total: $${total.toFixed(2)}</div>
       </div>
-      <div class="small muted">${(rc.items||[]).length} items${rc.imageUrl? " • image stored":""}</div>
+      <div class="small muted">${(rc.items||[]).length} items ${rc.imageUrl? "• image stored":""}</div>
     `;
     box.appendChild(div);
   });
