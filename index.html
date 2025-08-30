@@ -7,23 +7,13 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
-        // Auth state observer
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                const snapshot = await database.ref('users/' + user.uid).once('value');
-                const userData = snapshot.val();
-                if (userData) {
-                    showMainApp(user, userData.username);
-                }
-            }
-        });
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -206,6 +196,99 @@
             color: #6c757d;
         }
 
+        .receipt-analysis {
+            background: #e3f2fd;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #2196f3;
+        }
+
+        .receipt-item {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .receipt-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .item-price {
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .friend-assignment {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .friend-tag {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .friend-tag.selected {
+            background: #28a745;
+        }
+
+        .friend-tag:hover {
+            transform: scale(1.05);
+        }
+
+        .ocr-progress {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .manual-items {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .add-item-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            width: auto;
+            margin-top: 10px;
+        }
+
         .hidden {
             display: none;
         }
@@ -335,34 +418,60 @@
                 <h3 style="margin-bottom: 20px; color: #667eea;">Add New Expense</h3>
                 
                 <div class="form-group">
-                    <label for="expenseDescription">Description</label>
-                    <input type="text" id="expenseDescription" placeholder="Dinner at restaurant" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="expenseAmount">Total Amount ($)</label>
-                    <input type="number" id="expenseAmount" step="0.01" placeholder="50.00" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="receiptUpload">Receipt/Bill (Optional)</label>
+                    <label for="receiptUpload">Receipt/Bill</label>
                     <div class="file-input-wrapper">
-                        <input type="file" id="receiptUpload" class="file-input" accept="image/*" onchange="previewReceipt()">
+                        <input type="file" id="receiptUpload" class="file-input" accept="image/*" onchange="handleReceiptUpload()">
                         <div class="file-input-display">
-                            <span>📄 Tap to upload receipt</span>
+                            <span>📄 Tap to upload receipt for OCR scanning</span>
                         </div>
                     </div>
                     <img id="receiptPreview" class="receipt-preview hidden">
                 </div>
 
-                <div class="form-group">
-                    <label for="friendsList">Split with friends:</label>
-                    <div id="friendsSelection"></div>
-                    <input type="text" id="newFriend" placeholder="Add friend's username" style="margin-top: 10px;">
-                    <button class="secondary-btn" onclick="addFriend()">Add Friend</button>
+                <!-- OCR Progress -->
+                <div id="ocrProgress" class="ocr-progress hidden">
+                    <div>🔍 Scanning receipt...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div id="progressText">0%</div>
                 </div>
 
-                <button class="success-btn" onclick="addExpense()">Add Expense</button>
+                <!-- Receipt Analysis Results -->
+                <div id="receiptAnalysis" class="receipt-analysis hidden">
+                    <h4 style="margin-bottom: 15px; color: #2196f3;">📋 Detected Items</h4>
+                    <div id="detectedItems"></div>
+                    <div class="manual-items">
+                        <h5 style="margin-bottom: 10px;">Add Manual Item</h5>
+                        <input type="text" id="manualItemName" placeholder="Item name" style="margin-bottom: 8px;">
+                        <input type="number" id="manualItemPrice" placeholder="Price" step="0.01" style="margin-bottom: 8px;">
+                        <button class="add-item-btn" onclick="addManualItem()">+ Add Item</button>
+                    </div>
+                </div>
+
+                <!-- Simple expense mode (fallback) -->
+                <div id="simpleExpenseMode">
+                    <div class="form-group">
+                        <label for="expenseDescription">Description</label>
+                        <input type="text" id="expenseDescription" placeholder="Dinner at restaurant" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="expenseAmount">Total Amount ($)</label>
+                        <input type="number" id="expenseAmount" step="0.01" placeholder="50.00" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="friendsList">Split equally with friends:</label>
+                        <div id="friendsSelection"></div>
+                        <input type="text" id="newFriend" placeholder="Add friend's username" style="margin-top: 10px;">
+                        <button class="secondary-btn" onclick="addFriend()">Add Friend</button>
+                    </div>
+                </div>
+
+                <button class="success-btn" onclick="receiptItems.length > 0 ? addItemizedExpense() : addSimpleExpense()">
+                    <span id="addExpenseButtonText">Add Expense</span>
+                </button>
                 <div id="expenseError" class="error"></div>
                 <div id="expenseSuccess" class="success"></div>
             </div>
@@ -383,6 +492,7 @@
 
     <script>
         // Firebase configuration - Replace with your actual config from Firebase Console
+// Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBllp5zRTzOo_v3MJsHDrO_QOoS3Rk7pUQ",
@@ -402,6 +512,8 @@ const firebaseConfig = {
 
         let currentUser = null;
         let friends = [];
+        let receiptItems = [];
+        let itemAssignments = {};
 
         // Authentication functions
         function switchAuthTab(tab) {
@@ -563,168 +675,6 @@ const firebaseConfig = {
             }
         }
 
-        function previewReceipt() {
-            const file = document.getElementById('receiptUpload').files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const preview = document.getElementById('receiptPreview');
-                    preview.src = e.target.result;
-                    preview.classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        async function addExpense() {
-            const description = document.getElementById('expenseDescription').value.trim();
-            const amount = parseFloat(document.getElementById('expenseAmount').value);
-            const selectedFriends = Array.from(document.querySelectorAll('#friendsSelection input[type="checkbox"]:checked'))
-                .map(cb => cb.value);
-
-            if (!description) {
-                document.getElementById('expenseError').textContent = 'Please enter a description';
-                return;
-            }
-            
-            if (!amount || amount <= 0) {
-                document.getElementById('expenseError').textContent = 'Please enter a valid amount';
-                return;
-            }
-            
-            if (selectedFriends.length === 0) {
-                document.getElementById('expenseError').textContent = 'Please select at least one friend to split with';
-                return;
-            }
-
-            const splitAmount = amount / (selectedFriends.length + 1); // +1 for current user
-
-            const expense = {
-                description,
-                totalAmount: amount,
-                splitAmount,
-                paidBy: currentUser.username,
-                splitWith: selectedFriends,
-                date: new Date().toISOString(),
-                timestamp: Date.now()
-            };
-
-            try {
-                // Add expense to database
-                await database.ref('expenses').push(expense);
-
-                // Update balances
-                for (let friend of selectedFriends) {
-                    const balanceRef = database.ref(`balances/${currentUser.uid}_${friend}`);
-                    const snapshot = await balanceRef.once('value');
-                    const currentBalance = snapshot.val() || 0;
-                    await balanceRef.set(currentBalance + splitAmount);
-                }
-
-                document.getElementById('expenseSuccess').textContent = 'Expense added successfully!';
-                document.getElementById('expenseError').textContent = '';
-                
-                // Reset form
-                document.getElementById('expenseDescription').value = '';
-                document.getElementById('expenseAmount').value = '';
-                document.querySelectorAll('#friendsSelection input[type="checkbox"]').forEach(cb => cb.checked = false);
-                document.getElementById('receiptPreview').classList.add('hidden');
-                
-                setTimeout(() => {
-                    document.getElementById('expenseSuccess').textContent = '';
-                }, 3000);
-            } catch (error) {
-                document.getElementById('expenseError').textContent = 'Error adding expense: ' + error.message;
-            }
-        }
-
-        async function loadBalances() {
-            const container = document.getElementById('balancesList');
-            container.innerHTML = '';
-
-            const snapshot = await database.ref('balances').once('value');
-            const balances = snapshot.val() || {};
-
-            const userBalances = {};
-            
-            Object.keys(balances).forEach(key => {
-                if (key.startsWith(currentUser.uid + '_')) {
-                    const friend = key.split('_')[1];
-                    userBalances[friend] = balances[key];
-                }
-            });
-
-            if (Object.keys(userBalances).length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #6c757d;">No balances yet</p>';
-                return;
-            }
-
-            Object.entries(userBalances).forEach(([friend, balance]) => {
-                const balanceDiv = document.createElement('div');
-                balanceDiv.className = 'friend-split';
-                
-                let balanceClass = 'balance-zero';
-                let balanceText = '$0.00';
-                
-                if (balance > 0) {
-                    balanceClass = 'balance-positive';
-                    balanceText = `+$${balance.toFixed(2)}`;
-                } else if (balance < 0) {
-                    balanceClass = 'balance-negative';
-                    balanceText = `-$${Math.abs(balance).toFixed(2)}`;
-                }
-                
-                balanceDiv.innerHTML = `
-                    <span>${friend}</span>
-                    <span class="${balanceClass}">${balanceText}</span>
-                `;
-                container.appendChild(balanceDiv);
-            });
-        }
-
-        async function loadHistory() {
-            const container = document.getElementById('expenseHistory');
-            container.innerHTML = '';
-
-            const snapshot = await database.ref('expenses').orderByChild('timestamp').once('value');
-            const expenses = snapshot.val();
-
-            if (!expenses) {
-                container.innerHTML = '<p style="text-align: center; color: #6c757d;">No expenses yet</p>';
-                return;
-            }
-
-            const userExpenses = Object.values(expenses)
-                .filter(expense => 
-                    expense.paidBy === currentUser.username || 
-                    expense.splitWith.includes(currentUser.username)
-                )
-                .sort((a, b) => b.timestamp - a.timestamp);
-
-            userExpenses.forEach(expense => {
-                const expenseDiv = document.createElement('div');
-                expenseDiv.className = 'expense-item';
-                
-                const date = new Date(expense.date).toLocaleDateString();
-                const isPaidByUser = expense.paidBy === currentUser.username;
-                
-                expenseDiv.innerHTML = `
-                    <div class="expense-header">
-                        <div>
-                            <strong>${expense.description}</strong>
-                            <div class="expense-date">${date}</div>
-                        </div>
-                        <div class="expense-amount">$${expense.totalAmount.toFixed(2)}</div>
-                    </div>
-                    <div style="font-size: 0.9rem; color: #6c757d;">
-                        ${isPaidByUser ? 'You paid' : `Paid by ${expense.paidBy}`} • 
-                        Split ${expense.splitWith.length + 1} ways ($${expense.splitAmount.toFixed(2)} each)
-                    </div>
-                `;
-                container.appendChild(expenseDiv);
-            });
-        }
-
         async function removeFriend(friendName) {
             if (confirm(`Remove ${friendName} from your friends list?`)) {
                 friends = friends.filter(f => f !== friendName);
@@ -743,6 +693,160 @@ const firebaseConfig = {
                 updateFriendsSelection();
             }
         }
-    </script>
-</body>
-</html>
+
+        // Receipt OCR and Analysis Functions
+        async function handleReceiptUpload() {
+            const file = document.getElementById('receiptUpload').files[0];
+            if (!file) return;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('receiptPreview');
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+
+            // Hide simple mode and show OCR progress
+            document.getElementById('simpleExpenseMode').classList.add('hidden');
+            document.getElementById('ocrProgress').classList.remove('hidden');
+            
+            try {
+                // Initialize Tesseract with progress tracking
+                const result = await Tesseract.recognize(file, 'eng', {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            const progress = Math.round(m.progress * 100);
+                            document.getElementById('progressFill').style.width = progress + '%';
+                            document.getElementById('progressText').textContent = progress + '%';
+                        }
+                    }
+                });
+
+                // Hide progress and analyze text
+                document.getElementById('ocrProgress').classList.add('hidden');
+                await analyzeReceiptText(result.data.text);
+                
+            } catch (error) {
+                console.error('OCR Error:', error);
+                document.getElementById('ocrProgress').classList.add('hidden');
+                document.getElementById('simpleExpenseMode').classList.remove('hidden');
+                alert('Could not scan receipt. Please add items manually.');
+            }
+        }
+
+        async function analyzeReceiptText(text) {
+            console.log('OCR Text:', text);
+            
+            // Parse receipt text to extract items and prices
+            const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            const items = [];
+            
+            // Improved regex patterns for receipt parsing
+            const pricePattern = /\$?(\d+\.?\d*)/;
+            const itemPattern = /^([A-Za-z][A-Za-z0-9\s\-\.]{2,30})\s*.*?(\$?\d+\.?\d*)$/;
+            
+            for (let line of lines) {
+                // Skip common receipt headers/footers
+                if (line.toLowerCase().includes('total') || 
+                    line.toLowerCase().includes('tax') ||
+                    line.toLowerCase().includes('subtotal') ||
+                    line.toLowerCase().includes('change') ||
+                    line.toLowerCase().includes('receipt') ||
+                    line.length < 3) continue;
+                
+                const match = line.match(itemPattern);
+                if (match) {
+                    const itemName = match[1].trim();
+                    const priceStr = match[2].replace('$', '');
+                    const price = parseFloat(priceStr);
+                    
+                    if (!isNaN(price) && price > 0 && price < 1000) {
+                        items.push({
+                            name: itemName,
+                            price: price,
+                            assignedTo: []
+                        });
+                    }
+                }
+            }
+            
+            // If no items found, try simpler pattern
+            if (items.length === 0) {
+                for (let line of lines) {
+                    const priceMatch = line.match(/\$(\d+\.?\d*)/);
+                    if (priceMatch) {
+                        const price = parseFloat(priceMatch[1]);
+                        if (price > 0 && price < 1000) {
+                            const itemName = line.replace(priceMatch[0], '').trim() || 'Item';
+                            if (itemName.length > 2) {
+                                items.push({
+                                    name: itemName,
+                                    price: price,
+                                    assignedTo: []
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            receiptItems = items;
+            displayReceiptItems();
+        }
+
+        function displayReceiptItems() {
+            const container = document.getElementById('detectedItems');
+            const analysisDiv = document.getElementById('receiptAnalysis');
+            
+            if (receiptItems.length === 0) {
+                container.innerHTML = '<p style="color: #6c757d;">No items detected. Add items manually below.</p>';
+            } else {
+                container.innerHTML = '';
+                receiptItems.forEach((item, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'receipt-item';
+                    itemDiv.innerHTML = createReceiptItemHTML(item, index);
+                    container.appendChild(itemDiv);
+                });
+            }
+            
+            analysisDiv.classList.remove('hidden');
+        }
+
+        function createReceiptItemHTML(item, index) {
+            const friendTags = friends.map(friend => {
+                const isAssigned = item.assignedTo.includes(friend);
+                return `<span class="friend-tag ${isAssigned ? 'selected' : ''}" 
+                            onclick="toggleItemAssignment(${index}, '${friend}')">
+                            ${friend}
+                        </span>`;
+            }).join('');
+
+            return `
+                <div class="receipt-item-header">
+                    <div>
+                        <input type="text" value="${item.name}" 
+                               onchange="updateItemName(${index}, this.value)"
+                               style="border: none; background: transparent; font-weight: 600; width: 100%;">
+                    </div>
+                    <div>
+                        <span class="item-price">$</span>
+                        <input type="number" value="${item.price}" step="0.01"
+                               onchange="updateItemPrice(${index}, this.value)"
+                               style="border: none; background: transparent; width: 60px; text-align: right; font-weight: 700; color: #667eea;">
+                    </div>
+                </div>
+                <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 8px;">
+                    Assign to friends (click to toggle):
+                </div>
+                <div class="friend-assignment">
+                    <span class="friend-tag ${item.assignedTo.includes(currentUser.username) ? 'selected' : ''}" 
+                          onclick="toggleItemAssignment(${index}, '${currentUser.username}')">
+                        Me
+                    </span>
+                    ${friendTags}
+                </div>
+                <div style="margin-top: 8px; font-size: 0.8rem; color: #667eea;">
+                    Split ${item.assignedTo.length} way
