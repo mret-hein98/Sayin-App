@@ -46,22 +46,11 @@
             opacity: 0.9;
         }
 
-        .card {
-            background: white;
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
             color: #555;
         }
 
@@ -437,6 +426,19 @@ const firebaseConfig = {
             }
         }
 
+        // Sanitize user input to prevent XSS
+        function sanitizeInput(str) {
+            return str.replace(/[&<>"]+/g, function(tag) {
+                const chars = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;'
+                };
+                return chars[tag] || tag;
+            });
+        }
+
         function updateFriendsSelection() {
             const container = document.getElementById('friendsSelection');
             container.innerHTML = '';
@@ -447,37 +449,36 @@ const firebaseConfig = {
             }
             
             friends.forEach(friend => {
+                const safeFriend = sanitizeInput(friend);
                 const friendDiv = document.createElement('div');
                 friendDiv.className = 'friend-split';
                 friendDiv.innerHTML = `
                     <label style="margin: 0; display: flex; align-items: center; cursor: pointer;">
-                        <input type="checkbox" value="${friend}" style="width: auto; margin-right: 8px;">
-                        ${friend}
+                        <input type="checkbox" value="${safeFriend}" style="width: auto; margin-right: 8px;">
+                        ${safeFriend}
                     </label>
-                    <button onclick="removeFriend('${friend}')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; width: auto;">Remove</button>
+                    <button onclick="removeFriend('${safeFriend}')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; width: auto;">Remove</button>
                 `;
                 container.appendChild(friendDiv);
             });
         }
 
         async function addFriend() {
-            const friendUsername = document.getElementById('newFriend').value.trim();
+            let friendUsername = document.getElementById('newFriend').value.trim();
+            friendUsername = sanitizeInput(friendUsername);
             if (!friendUsername) {
                 alert('Please enter a friend\'s username');
                 return;
             }
-
             if (friendUsername === currentUser.username) {
                 alert('You cannot add yourself as a friend');
                 return;
             }
-
             if (!friends.includes(friendUsername)) {
                 friends.push(friendUsername);
                 await database.ref('userFriends/' + currentUser.uid).push(friendUsername);
                 document.getElementById('newFriend').value = '';
                 updateFriendsSelection();
-                
                 // Show success message
                 const successDiv = document.createElement('div');
                 successDiv.className = 'success';
@@ -511,28 +512,24 @@ const firebaseConfig = {
 
         // Expense functions
         async function addExpense() {
-            const description = document.getElementById('expenseDescription').value.trim();
+            let description = document.getElementById('expenseDescription').value.trim();
+            description = sanitizeInput(description);
             const amount = parseFloat(document.getElementById('expenseAmount').value);
             const selectedFriends = Array.from(document.querySelectorAll('#friendsSelection input[type="checkbox"]:checked'))
                 .map(cb => cb.value);
-
             if (!description) {
                 document.getElementById('expenseError').textContent = 'Please enter a description';
                 return;
             }
-            
             if (!amount || amount <= 0) {
                 document.getElementById('expenseError').textContent = 'Please enter a valid amount';
                 return;
             }
-            
             if (selectedFriends.length === 0) {
                 document.getElementById('expenseError').textContent = 'Please select at least one friend to split with';
                 return;
             }
-
             const splitAmount = amount / (selectedFriends.length + 1); // +1 for current user
-
             const expense = {
                 description,
                 totalAmount: amount,
@@ -543,11 +540,9 @@ const firebaseConfig = {
                 timestamp: Date.now(),
                 type: 'simple'
             };
-
             try {
                 // Add expense to database
                 await database.ref('expenses').push(expense);
-
                 // Update balances - friends owe the current user
                 for (let friend of selectedFriends) {
                     const balanceKey = `${currentUser.uid}_${friend}`;
@@ -556,15 +551,12 @@ const firebaseConfig = {
                     const currentBalance = snapshot.val() || 0;
                     await balanceRef.set(currentBalance + splitAmount);
                 }
-
                 document.getElementById('expenseSuccess').textContent = 'Expense added successfully!';
                 document.getElementById('expenseError').textContent = '';
-                
                 // Reset form
                 document.getElementById('expenseDescription').value = '';
                 document.getElementById('expenseAmount').value = '';
                 document.querySelectorAll('#friendsSelection input[type="checkbox"]').forEach(cb => cb.checked = false);
-                
                 setTimeout(() => {
                     document.getElementById('expenseSuccess').textContent = '';
                 }, 3000);
