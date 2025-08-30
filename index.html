@@ -15,6 +15,17 @@
             box-sizing: border-box;
         }
 
+        // Auth state observer
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const snapshot = await database.ref('users/' + user.uid).once('value');
+                const userData = snapshot.val();
+                if (userData) {
+                    showMainApp(user, userData.username);
+                }
+            }
+        });
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -46,11 +57,22 @@
             opacity: 0.9;
         }
 
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
             color: #555;
         }
 
@@ -96,7 +118,12 @@
         }
 
         .secondary-btn {
+            background: #6c757d;
             background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+
+        .danger-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
         }
 
         .success-btn {
@@ -128,20 +155,30 @@
             color: white;
         }
 
-        .hidden {
-            display: none;
+        .expense-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
         }
 
-        .error {
-            color: #dc3545;
-            font-size: 0.9rem;
-            margin-top: 5px;
+        .expense-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
         }
 
-        .success {
-            color: #28a745;
+        .expense-amount {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .expense-date {
             font-size: 0.9rem;
-            margin-top: 5px;
+            color: #6c757d;
         }
 
         .friend-split {
@@ -166,8 +203,149 @@
             font-weight: 600;
         }
 
-        .balance-zero {
+        .receipt-analysis {
+            background: #e3f2fd;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #2196f3;
+        }
+
+        .receipt-item {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #e9ecef;
+        }
+
+        .receipt-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .item-price {
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .friend-assignment {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .friend-tag {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .friend-tag.selected {
+            background: #28a745;
+        }
+
+        .friend-tag:hover {
+            transform: scale(1.05);
+        }
+
+        .ocr-progress {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .manual-items {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .add-item-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            width: auto;
+            margin-top: 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .error {
+            color: #dc3545;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .success {
+            color: #28a745;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .receipt-preview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-display {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
             color: #6c757d;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-display:hover {
+            border-color: #667eea;
+            background: #f0f2ff;
         }
 
         @media (max-width: 480px) {
@@ -247,23 +425,58 @@
                 <h3 style="margin-bottom: 20px; color: #667eea;">Add New Expense</h3>
                 
                 <div class="form-group">
-                    <label for="expenseDescription">Description</label>
-                    <input type="text" id="expenseDescription" placeholder="Dinner at restaurant" required>
+                    <label for="receiptUpload">Receipt/Bill</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="receiptUpload" class="file-input" accept="image/*" onchange="handleReceiptUpload()">
+                        <div class="file-input-display">
+                            <span>📄 Tap to upload receipt for OCR scanning</span>
+                        </div>
+                    </div>
+                    <img id="receiptPreview" class="receipt-preview hidden">
                 </div>
 
-                <div class="form-group">
-                    <label for="expenseAmount">Total Amount ($)</label>
-                    <input type="number" id="expenseAmount" step="0.01" placeholder="50.00" required>
+                <!-- OCR Progress -->
+                <div id="ocrProgress" class="ocr-progress hidden">
+                    <div>🔍 Scanning receipt...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div id="progressText">0%</div>
                 </div>
 
-                <div class="form-group">
-                    <label for="friendsList">Split with friends:</label>
-                    <div id="friendsSelection"></div>
-                    <input type="text" id="newFriend" placeholder="Add friend's username" style="margin-top: 10px;">
-                    <button class="secondary-btn" onclick="addFriend()">Add Friend</button>
+                <!-- Receipt Analysis Results -->
+                <div id="receiptAnalysis" class="receipt-analysis hidden">
+                    <h4 style="margin-bottom: 15px; color: #2196f3;">📋 Detected Items</h4>
+                    <div id="detectedItems"></div>
+                    <div class="manual-items">
+                        <h5 style="margin-bottom: 10px;">Add Manual Item</h5>
+                        <input type="text" id="manualItemName" placeholder="Item name" style="margin-bottom: 8px;">
+                        <input type="number" id="manualItemPrice" placeholder="Price" step="0.01" style="margin-bottom: 8px;">
+                        <button class="add-item-btn" onclick="addManualItem()">+ Add Item</button>
+                    </div>
                 </div>
 
-                <button class="success-btn" onclick="addExpense()">Add Expense</button>
+                <!-- Simple expense mode (fallback) -->
+                <div id="simpleExpenseMode">
+                    <div class="form-group">
+                        <label for="expenseDescription">Description</label>
+                        <input type="text" id="expenseDescription" placeholder="Dinner at restaurant" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="expenseAmount">Total Amount ($)</label>
+                        <input type="number" id="expenseAmount" step="0.01" placeholder="50.00" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="friendsList">Split equally with friends:</label>
+                        <div id="friendsSelection"></div>
+                        <input type="text" id="newFriend" placeholder="Add friend's username" style="margin-top: 10px;">
+                        <button class="secondary-btn" onclick="addFriend()">Add Friend</button>
+                    </div>
+
+                    <button class="success-btn" onclick="addSimpleExpense()">Add Expense</button>
+                </div>
                 <div id="expenseError" class="error"></div>
                 <div id="expenseSuccess" class="success"></div>
             </div>
@@ -284,8 +497,6 @@
 
     <script>
         // Firebase configuration - Replace with your actual config from Firebase Console
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBllp5zRTzOo_v3MJsHDrO_QOoS3Rk7pUQ",
   authDomain: "sayin-fa2ae.firebaseapp.com",
@@ -297,6 +508,7 @@ const firebaseConfig = {
   measurementId: "G-09LWXSVLJ0"
 };
 
+
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
@@ -304,6 +516,8 @@ const firebaseConfig = {
 
         let currentUser = null;
         let friends = [];
+        let receiptItems = [];
+        let itemAssignments = {};
 
         // Authentication functions
         function switchAuthTab(tab) {
@@ -347,15 +561,10 @@ const firebaseConfig = {
         }
 
         async function signup() {
-            const username = document.getElementById('signupUsername').value.trim();
-            const email = document.getElementById('signupEmail').value.trim();
+            const username = document.getElementById('signupUsername').value;
+            const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
             const errorDiv = document.getElementById('signupError');
-
-            if (!username || !email || !password) {
-                errorDiv.textContent = 'Please fill in all fields';
-                return;
-            }
 
             try {
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
@@ -375,14 +584,9 @@ const firebaseConfig = {
         }
 
         async function login() {
-            const email = document.getElementById('loginEmail').value.trim();
+            const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             const errorDiv = document.getElementById('loginError');
-
-            if (!email || !password) {
-                errorDiv.textContent = 'Please fill in all fields';
-                return;
-            }
 
             try {
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
@@ -414,29 +618,12 @@ const firebaseConfig = {
             loadFriends();
         }
 
-        // Friend management
+        // Main app functions
         async function loadFriends() {
-            try {
-                const snapshot = await database.ref('userFriends/' + currentUser.uid).once('value');
-                const friendsData = snapshot.val();
-                friends = friendsData ? Object.values(friendsData) : [];
-                updateFriendsSelection();
-            } catch (error) {
-                console.error('Error loading friends:', error);
-            }
-        }
-
-        // Sanitize user input to prevent XSS
-        function sanitizeInput(str) {
-            return str.replace(/[&<>"]+/g, function(tag) {
-                const chars = {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;'
-                };
-                return chars[tag] || tag;
-            });
+            const snapshot = await database.ref('userFriends/' + currentUser.uid).once('value');
+            const friendsData = snapshot.val();
+            friends = friendsData ? Object.values(friendsData) : [];
+            updateFriendsSelection();
         }
 
         function updateFriendsSelection() {
@@ -449,36 +636,37 @@ const firebaseConfig = {
             }
             
             friends.forEach(friend => {
-                const safeFriend = sanitizeInput(friend);
                 const friendDiv = document.createElement('div');
                 friendDiv.className = 'friend-split';
                 friendDiv.innerHTML = `
                     <label style="margin: 0; display: flex; align-items: center; cursor: pointer;">
-                        <input type="checkbox" value="${safeFriend}" style="width: auto; margin-right: 8px;">
-                        ${safeFriend}
+                        <input type="checkbox" value="${friend}" style="width: auto; margin-right: 8px;">
+                        ${friend}
                     </label>
-                    <button onclick="removeFriend('${safeFriend}')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; width: auto;">Remove</button>
+                    <button onclick="removeFriend('${friend}')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; width: auto;">Remove</button>
                 `;
                 container.appendChild(friendDiv);
             });
         }
 
         async function addFriend() {
-            let friendUsername = document.getElementById('newFriend').value.trim();
-            friendUsername = sanitizeInput(friendUsername);
+            const friendUsername = document.getElementById('newFriend').value.trim();
             if (!friendUsername) {
                 alert('Please enter a friend\'s username');
                 return;
             }
+
             if (friendUsername === currentUser.username) {
                 alert('You cannot add yourself as a friend');
                 return;
             }
+
             if (!friends.includes(friendUsername)) {
                 friends.push(friendUsername);
                 await database.ref('userFriends/' + currentUser.uid).push(friendUsername);
                 document.getElementById('newFriend').value = '';
                 updateFriendsSelection();
+                
                 // Show success message
                 const successDiv = document.createElement('div');
                 successDiv.className = 'success';
@@ -489,6 +677,341 @@ const firebaseConfig = {
             } else {
                 alert('This friend is already in your list');
             }
+        }
+
+        // Receipt OCR and Analysis Functions
+        async function handleReceiptUpload() {
+            const file = document.getElementById('receiptUpload').files[0];
+            if (!file) return;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('receiptPreview');
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+
+            // Hide simple mode and show OCR progress
+            document.getElementById('simpleExpenseMode').classList.add('hidden');
+            document.getElementById('ocrProgress').classList.remove('hidden');
+            
+            try {
+                // Initialize Tesseract with progress tracking
+                const result = await Tesseract.recognize(file, 'eng', {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            const progress = Math.round(m.progress * 100);
+                            document.getElementById('progressFill').style.width = progress + '%';
+                            document.getElementById('progressText').textContent = progress + '%';
+                        }
+                    }
+                });
+
+                // Hide progress and analyze text
+                document.getElementById('ocrProgress').classList.add('hidden');
+                await analyzeReceiptText(result.data.text);
+                
+            } catch (error) {
+                console.error('OCR Error:', error);
+                document.getElementById('ocrProgress').classList.add('hidden');
+                document.getElementById('simpleExpenseMode').classList.remove('hidden');
+                alert('Could not scan receipt. Please add items manually.');
+            }
+        }
+
+        async function analyzeReceiptText(text) {
+            console.log('OCR Text:', text);
+            
+            // Parse receipt text to extract items and prices
+            const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+            const items = [];
+            
+            // Improved regex patterns for receipt parsing
+            const pricePattern = /\$?(\d+\.?\d*)/;
+            const itemPattern = /^([A-Za-z][A-Za-z0-9\s\-\.]{2,30})\s*.*?(\$?\d+\.?\d*)$/;
+            
+            for (let line of lines) {
+                // Skip common receipt headers/footers
+                if (line.toLowerCase().includes('total') || 
+                    line.toLowerCase().includes('tax') ||
+                    line.toLowerCase().includes('subtotal') ||
+                    line.toLowerCase().includes('change') ||
+                    line.toLowerCase().includes('receipt') ||
+                    line.length < 3) continue;
+                
+                const match = line.match(itemPattern);
+                if (match) {
+                    const itemName = match[1].trim();
+                    const priceStr = match[2].replace('
+
+        async function addSimpleExpense() {
+            const description = document.getElementById('expenseDescription').value.trim();
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            const selectedFriends = Array.from(document.querySelectorAll('#friendsSelection input[type="checkbox"]:checked'))
+                .map(cb => cb.value);
+
+            if (!description) {
+                document.getElementById('expenseError').textContent = 'Please enter a description';
+                return;
+            }
+            
+            if (!amount || amount <= 0) {
+                document.getElementById('expenseError').textContent = 'Please enter a valid amount';
+                return;
+            }
+            
+            if (selectedFriends.length === 0) {
+                document.getElementById('expenseError').textContent = 'Please select at least one friend to split with';
+                return;
+            }
+
+            const splitAmount = amount / (selectedFriends.length + 1); // +1 for current user
+
+            const expense = {
+                description,
+                totalAmount: amount,
+                splitAmount,
+                paidBy: currentUser.username,
+                splitWith: selectedFriends,
+                date: new Date().toISOString(),
+                timestamp: Date.now(),
+                type: 'simple'
+            };
+
+            try {
+                // Add expense to database
+                await database.ref('expenses').push(expense);
+
+                // Update balances - friends owe the current user
+                for (let friend of selectedFriends) {
+                    const balanceKey = `${currentUser.uid}_${friend}`;
+                    const balanceRef = database.ref(`balances/${balanceKey}`);
+                    const snapshot = await balanceRef.once('value');
+                    const currentBalance = snapshot.val() || 0;
+                    await balanceRef.set(currentBalance + splitAmount);
+                }
+
+                document.getElementById('expenseSuccess').textContent = 'Expense added successfully!';
+                document.getElementById('expenseError').textContent = '';
+                
+                // Reset form
+                document.getElementById('expenseDescription').value = '';
+                document.getElementById('expenseAmount').value = '';
+                document.querySelectorAll('#friendsSelection input[type="checkbox"]').forEach(cb => cb.checked = false);
+                
+                setTimeout(() => {
+                    document.getElementById('expenseSuccess').textContent = '';
+                }, 3000);
+            } catch (error) {
+                document.getElementById('expenseError').textContent = 'Error adding expense: ' + error.message;
+            }
+        }
+
+        async function loadBalances() {
+            const container = document.getElementById('balancesList');
+            container.innerHTML = '<div style="text-align: center; color: #667eea;">Loading balances...</div>';
+
+            const snapshot = await database.ref('balances').once('value');
+            const balances = snapshot.val() || {};
+
+            const userBalances = {};
+            let totalOwedToMe = 0;
+            
+            // Get balances where others owe the current user
+            Object.keys(balances).forEach(key => {
+                if (key.startsWith(currentUser.uid + '_')) {
+                    const friend = key.split('_')[1];
+                    const amount = balances[key];
+                    userBalances[friend] = amount;
+                    if (amount > 0) totalOwedToMe += amount;
+                }
+            });
+
+            container.innerHTML = '';
+
+            // Show total summary
+            const summaryDiv = document.createElement('div');
+            summaryDiv.style.cssText = 'background: #e8f5e8; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center;';
+            summaryDiv.innerHTML = `
+                <div style="font-size: 1.2rem; font-weight: 700; color: #28a745;">
+                    Total Owed to You: ${totalOwedToMe.toFixed(2)}
+                </div>
+            `;
+            container.appendChild(summaryDiv);
+
+            if (Object.keys(userBalances).length === 0) {
+                const noBalanceDiv = document.createElement('div');
+                noBalanceDiv.innerHTML = '<p style="text-align: center; color: #6c757d;">No outstanding balances</p>';
+                container.appendChild(noBalanceDiv);
+                return;
+            }
+
+            // Sort friends by amount owed (highest first)
+            const sortedBalances = Object.entries(userBalances).sort((a, b) => b[1] - a[1]);
+
+            sortedBalances.forEach(([friend, balance]) => {
+                const balanceDiv = document.createElement('div');
+                balanceDiv.className = 'friend-split';
+                
+                let balanceClass = 'balance-zero';
+                let balanceText = '$0.00';
+                let statusText = 'Even';
+                
+                if (balance > 0) {
+                    balanceClass = 'balance-positive';
+                    balanceText = `${balance.toFixed(2)}`;
+                    statusText = 'Owes you';
+                } else if (balance < 0) {
+                    balanceClass = 'balance-negative';
+                    balanceText = `${Math.abs(balance).toFixed(2)}`;
+                    statusText = 'You owe';
+                }
+                
+                balanceDiv.innerHTML = `
+                    <div>
+                        <div style="font-weight: 600;">${friend}</div>
+                        <div style="font-size: 0.8rem; color: #6c757d;">${statusText}</div>
+                    </div>
+                    <div class="${balanceClass}" style="text-align: right;">
+                        <div style="font-size: 1.1rem;">${balanceText}</div>
+                        ${balance !== 0 ? `<button onclick="settleBalance('${friend}')" style="font-size: 0.7rem; padding: 2px 6px; margin-top: 4px; width: auto; background: #6c757d;">Settle</button>` : ''}
+                    </div>
+                `;
+                container.appendChild(balanceDiv);
+            });
+        }
+
+        async function settleBalance(friend) {
+            if (confirm(`Mark balance with ${friend} as settled?`)) {
+                const balanceKey = `${currentUser.uid}_${friend}`;
+                await database.ref(`balances/${balanceKey}`).set(0);
+                
+                // Add settlement record
+                await database.ref('settlements').push({
+                    settledBy: currentUser.username,
+                    settledWith: friend,
+                    date: new Date().toISOString(),
+                    timestamp: Date.now()
+                });
+                
+                loadBalances(); // Refresh the display
+            }
+        }');
+            container.innerHTML = '';
+
+            const snapshot = await database.ref('balances').once('value');
+            const balances = snapshot.val() || {};
+
+            const userBalances = {};
+            
+            Object.keys(balances).forEach(key => {
+                if (key.startsWith(currentUser.uid + '_')) {
+                    const friend = key.split('_')[1];
+                    userBalances[friend] = balances[key];
+                }
+            });
+
+            if (Object.keys(userBalances).length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #6c757d;">No balances yet</p>';
+                return;
+            }
+
+            Object.entries(userBalances).forEach(([friend, balance]) => {
+                const balanceDiv = document.createElement('div');
+                balanceDiv.className = 'friend-split';
+                
+                let balanceClass = 'balance-zero';
+                let balanceText = '$0.00';
+                
+                if (balance > 0) {
+                    balanceClass = 'balance-positive';
+                    balanceText = `+$${balance.toFixed(2)}`;
+                } else if (balance < 0) {
+                    balanceClass = 'balance-negative';
+                    balanceText = `-$${Math.abs(balance).toFixed(2)}`;
+                }
+                
+                balanceDiv.innerHTML = `
+                    <span>${friend}</span>
+                    <span class="${balanceClass}">${balanceText}</span>
+                `;
+                container.appendChild(balanceDiv);
+            });
+        }
+
+        async function loadHistory() {
+            const container = document.getElementById('expenseHistory');
+            container.innerHTML = '<div style="text-align: center; color: #667eea;">Loading history...</div>';
+
+            const snapshot = await database.ref('expenses').orderByChild('timestamp').once('value');
+            const expenses = snapshot.val();
+
+            container.innerHTML = '';
+
+            if (!expenses) {
+                container.innerHTML = '<p style="text-align: center; color: #6c757d;">No expenses yet</p>';
+                return;
+            }
+
+            const userExpenses = Object.values(expenses)
+                .filter(expense => 
+                    expense.paidBy === currentUser.username || 
+                    (expense.splitWith && expense.splitWith.includes(currentUser.username)) ||
+                    (expense.items && expense.items.some(item => item.assignedTo.includes(currentUser.username)))
+                )
+                .sort((a, b) => b.timestamp - a.timestamp);
+
+            userExpenses.forEach(expense => {
+                const expenseDiv = document.createElement('div');
+                expenseDiv.className = 'expense-item';
+                
+                const date = new Date(expense.date).toLocaleDateString();
+                const isPaidByUser = expense.paidBy === currentUser.username;
+                
+                let expenseDetails = '';
+                if (expense.type === 'itemized' && expense.items) {
+                    // Show itemized breakdown
+                    const itemsHTML = expense.items.map(item => 
+                        `<div style="font-size: 0.8rem; margin-left: 10px;">
+                            • ${item.name}: ${item.price.toFixed(2)} 
+                            ${item.assignedTo.length > 0 ? `(${item.assignedTo.join(', ')})` : ''}
+                        </div>`
+                    ).join('');
+                    
+                    expenseDetails = `
+                        <div style="font-size: 0.9rem; color: #6c757d; margin-top: 8px;">
+                            ${isPaidByUser ? 'You paid' : `Paid by ${expense.paidBy}`} • 
+                            ${expense.items.length} items
+                        </div>
+                        <div style="max-height: 100px; overflow-y: auto; margin-top: 8px;">
+                            ${itemsHTML}
+                        </div>
+                    `;
+                } else {
+                    // Show simple split
+                    expenseDetails = `
+                        <div style="font-size: 0.9rem; color: #6c757d;">
+                            ${isPaidByUser ? 'You paid' : `Paid by ${expense.paidBy}`} • 
+                            Split ${(expense.splitWith?.length || 0) + 1} ways 
+                            ${expense.splitAmount ? `(${expense.splitAmount.toFixed(2)} each)` : ''}
+                        </div>
+                    `;
+                }
+                
+                expenseDiv.innerHTML = `
+                    <div class="expense-header">
+                        <div>
+                            <strong>${expense.description}</strong>
+                            <div class="expense-date">${date}</div>
+                        </div>
+                        <div class="expense-amount">${expense.totalAmount.toFixed(2)}</div>
+                    </div>
+                    ${expenseDetails}
+                `;
+                container.appendChild(expenseDiv);
+            });
         }
 
         async function removeFriend(friendName) {
@@ -509,27 +1032,247 @@ const firebaseConfig = {
                 updateFriendsSelection();
             }
         }
+    </script>
+</body>
+</html>, '');
+                    const price = parseFloat(priceStr);
+                    
+                    if (!isNaN(price) && price > 0 && price < 1000) {
+                        items.push({
+                            name: itemName,
+                            price: price,
+                            assignedTo: []
+                        });
+                    }
+                }
+            }
+            
+            // If no items found, try simpler pattern
+            if (items.length === 0) {
+                for (let line of lines) {
+                    const priceMatch = line.match(/\$(\d+\.?\d*)/);
+                    if (priceMatch) {
+                        const price = parseFloat(priceMatch[1]);
+                        if (price > 0 && price < 1000) {
+                            const itemName = line.replace(priceMatch[0], '').trim() || 'Item';
+                            if (itemName.length > 2) {
+                                items.push({
+                                    name: itemName,
+                                    price: price,
+                                    assignedTo: []
+                                });
+                            }
+                        }
+                    }
+                }
+            }
 
-        // Expense functions
+            receiptItems = items;
+            displayReceiptItems();
+        }
+
+        function displayReceiptItems() {
+            const container = document.getElementById('detectedItems');
+            const analysisDiv = document.getElementById('receiptAnalysis');
+            
+            if (receiptItems.length === 0) {
+                container.innerHTML = '<p style="color: #6c757d;">No items detected. Add items manually below.</p>';
+            } else {
+                container.innerHTML = '';
+                receiptItems.forEach((item, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'receipt-item';
+                    itemDiv.innerHTML = createReceiptItemHTML(item, index);
+                    container.appendChild(itemDiv);
+                });
+            }
+            
+            analysisDiv.classList.remove('hidden');
+        }
+
+        function createReceiptItemHTML(item, index) {
+            const friendTags = friends.map(friend => {
+                const isAssigned = item.assignedTo.includes(friend);
+                return `<span class="friend-tag ${isAssigned ? 'selected' : ''}" 
+                            onclick="toggleItemAssignment(${index}, '${friend}')">
+                            ${friend}
+                        </span>`;
+            }).join('');
+
+            return `
+                <div class="receipt-item-header">
+                    <div>
+                        <input type="text" value="${item.name}" 
+                               onchange="updateItemName(${index}, this.value)"
+                               style="border: none; background: transparent; font-weight: 600; width: 100%;">
+                    </div>
+                    <div>
+                        <span class="item-price">$</span>
+                        <input type="number" value="${item.price}" step="0.01"
+                               onchange="updateItemPrice(${index}, this.value)"
+                               style="border: none; background: transparent; width: 60px; text-align: right; font-weight: 700; color: #667eea;">
+                    </div>
+                </div>
+                <div style="font-size: 0.9rem; color: #6c757d; margin-bottom: 8px;">
+                    Assign to friends (click to toggle):
+                </div>
+                <div class="friend-assignment">
+                    <span class="friend-tag ${item.assignedTo.includes(currentUser.username) ? 'selected' : ''}" 
+                          onclick="toggleItemAssignment(${index}, '${currentUser.username}')">
+                        Me
+                    </span>
+                    ${friendTags}
+                </div>
+                <div style="margin-top: 8px; font-size: 0.8rem; color: #667eea;">
+                    Split ${item.assignedTo.length} way${item.assignedTo.length !== 1 ? 's' : ''} 
+                    ${item.assignedTo.length > 0 ? `(${(item.price / item.assignedTo.length).toFixed(2)} each)` : ''}
+                </div>
+            `;
+        }
+
+        function toggleItemAssignment(itemIndex, person) {
+            const item = receiptItems[itemIndex];
+            if (item.assignedTo.includes(person)) {
+                item.assignedTo = item.assignedTo.filter(p => p !== person);
+            } else {
+                item.assignedTo.push(person);
+            }
+            
+            // Refresh the item display
+            const container = document.getElementById('detectedItems');
+            const itemDiv = container.children[itemIndex];
+            itemDiv.innerHTML = createReceiptItemHTML(item, itemIndex);
+        }
+
+        function updateItemName(index, newName) {
+            receiptItems[index].name = newName;
+        }
+
+        function updateItemPrice(index, newPrice) {
+            receiptItems[index].price = parseFloat(newPrice) || 0;
+            // Refresh the item to update split calculations
+            const container = document.getElementById('detectedItems');
+            const itemDiv = container.children[index];
+            itemDiv.innerHTML = createReceiptItemHTML(receiptItems[index], index);
+        }
+
+        function addManualItem() {
+            const name = document.getElementById('manualItemName').value.trim();
+            const price = parseFloat(document.getElementById('manualItemPrice').value);
+            
+            if (!name || !price) {
+                alert('Please enter both item name and price');
+                return;
+            }
+            
+            receiptItems.push({
+                name: name,
+                price: price,
+                assignedTo: []
+            });
+            
+            document.getElementById('manualItemName').value = '';
+            document.getElementById('manualItemPrice').value = '';
+            displayReceiptItems();
+        }
+
+        async function addItemizedExpense() {
+            if (receiptItems.length === 0) {
+                document.getElementById('expenseError').textContent = 'Please add some items first';
+                return;
+            }
+
+            const totalAmount = receiptItems.reduce((sum, item) => sum + item.price, 0);
+            const description = `Receipt with ${receiptItems.length} items`;
+
+            try {
+                // Calculate what each person owes the current user
+                const balanceUpdates = {};
+                
+                receiptItems.forEach(item => {
+                    if (item.assignedTo.length > 0) {
+                        const costPerPerson = item.price / item.assignedTo.length;
+                        
+                        item.assignedTo.forEach(person => {
+                            if (person !== currentUser.username) {
+                                // This person owes the current user money
+                                if (!balanceUpdates[person]) {
+                                    balanceUpdates[person] = 0;
+                                }
+                                balanceUpdates[person] += costPerPerson;
+                            }
+                        });
+                    }
+                });
+
+                // Save expense to database
+                const expense = {
+                    description,
+                    totalAmount,
+                    items: receiptItems,
+                    paidBy: currentUser.username,
+                    date: new Date().toISOString(),
+                    timestamp: Date.now(),
+                    type: 'itemized'
+                };
+
+                await database.ref('expenses').push(expense);
+
+                // Update balances
+                for (let [friend, amount] of Object.entries(balanceUpdates)) {
+                    const balanceKey = `${currentUser.uid}_${friend}`;
+                    const balanceRef = database.ref(`balances/${balanceKey}`);
+                    const snapshot = await balanceRef.once('value');
+                    const currentBalance = snapshot.val() || 0;
+                    await balanceRef.set(currentBalance + amount);
+                }
+
+                // Show success and reset
+                document.getElementById('expenseSuccess').textContent = 
+                    `Itemized expense added! Total: ${totalAmount.toFixed(2)}`;
+                resetReceiptForm();
+                
+                setTimeout(() => {
+                    document.getElementById('expenseSuccess').textContent = '';
+                }, 3000);
+
+            } catch (error) {
+                document.getElementById('expenseError').textContent = 'Error adding expense: ' + error.message;
+            }
+        }
+
+        function resetReceiptForm() {
+            receiptItems = [];
+            document.getElementById('receiptAnalysis').classList.add('hidden');
+            document.getElementById('receiptPreview').classList.add('hidden');
+            document.getElementById('simpleExpenseMode').classList.remove('hidden');
+            document.getElementById('receiptUpload').value = '';
+            document.getElementById('expenseError').textContent = '';
+        }
+
         async function addExpense() {
-            let description = document.getElementById('expenseDescription').value.trim();
-            description = sanitizeInput(description);
+            const description = document.getElementById('expenseDescription').value.trim();
             const amount = parseFloat(document.getElementById('expenseAmount').value);
             const selectedFriends = Array.from(document.querySelectorAll('#friendsSelection input[type="checkbox"]:checked'))
                 .map(cb => cb.value);
+
             if (!description) {
                 document.getElementById('expenseError').textContent = 'Please enter a description';
                 return;
             }
+            
             if (!amount || amount <= 0) {
                 document.getElementById('expenseError').textContent = 'Please enter a valid amount';
                 return;
             }
+            
             if (selectedFriends.length === 0) {
                 document.getElementById('expenseError').textContent = 'Please select at least one friend to split with';
                 return;
             }
+
             const splitAmount = amount / (selectedFriends.length + 1); // +1 for current user
+
             const expense = {
                 description,
                 totalAmount: amount,
@@ -537,26 +1280,30 @@ const firebaseConfig = {
                 paidBy: currentUser.username,
                 splitWith: selectedFriends,
                 date: new Date().toISOString(),
-                timestamp: Date.now(),
-                type: 'simple'
+                timestamp: Date.now()
             };
+
             try {
                 // Add expense to database
                 await database.ref('expenses').push(expense);
-                // Update balances - friends owe the current user
+
+                // Update balances
                 for (let friend of selectedFriends) {
-                    const balanceKey = `${currentUser.uid}_${friend}`;
-                    const balanceRef = database.ref(`balances/${balanceKey}`);
+                    const balanceRef = database.ref(`balances/${currentUser.uid}_${friend}`);
                     const snapshot = await balanceRef.once('value');
                     const currentBalance = snapshot.val() || 0;
                     await balanceRef.set(currentBalance + splitAmount);
                 }
+
                 document.getElementById('expenseSuccess').textContent = 'Expense added successfully!';
                 document.getElementById('expenseError').textContent = '';
+                
                 // Reset form
                 document.getElementById('expenseDescription').value = '';
                 document.getElementById('expenseAmount').value = '';
                 document.querySelectorAll('#friendsSelection input[type="checkbox"]').forEach(cb => cb.checked = false);
+                document.getElementById('receiptPreview').classList.add('hidden');
+                
                 setTimeout(() => {
                     document.getElementById('expenseSuccess').textContent = '';
                 }, 3000);
@@ -569,158 +1316,154 @@ const firebaseConfig = {
             const container = document.getElementById('balancesList');
             container.innerHTML = '<div style="text-align: center; color: #667eea;">Loading balances...</div>';
 
-            try {
-                const snapshot = await database.ref('balances').once('value');
-                const balances = snapshot.val() || {};
+            const snapshot = await database.ref('balances').once('value');
+            const balances = snapshot.val() || {};
 
-                const userBalances = {};
-                let totalOwedToMe = 0;
+            const userBalances = {};
+            let totalOwedToMe = 0;
+            
+            // Get balances where others owe the current user
+            Object.keys(balances).forEach(key => {
+                if (key.startsWith(currentUser.uid + '_')) {
+                    const friend = key.split('_')[1];
+                    const amount = balances[key];
+                    userBalances[friend] = amount;
+                    if (amount > 0) totalOwedToMe += amount;
+                }
+            });
+
+            container.innerHTML = '';
+
+            // Show total summary
+            const summaryDiv = document.createElement('div');
+            summaryDiv.style.cssText = 'background: #e8f5e8; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center;';
+            summaryDiv.innerHTML = `
+                <div style="font-size: 1.2rem; font-weight: 700; color: #28a745;">
+                    Total Owed to You: ${totalOwedToMe.toFixed(2)}
+                </div>
+            `;
+            container.appendChild(summaryDiv);
+
+            if (Object.keys(userBalances).length === 0) {
+                const noBalanceDiv = document.createElement('div');
+                noBalanceDiv.innerHTML = '<p style="text-align: center; color: #6c757d;">No outstanding balances</p>';
+                container.appendChild(noBalanceDiv);
+                return;
+            }
+
+            // Sort friends by amount owed (highest first)
+            const sortedBalances = Object.entries(userBalances).sort((a, b) => b[1] - a[1]);
+
+            sortedBalances.forEach(([friend, balance]) => {
+                const balanceDiv = document.createElement('div');
+                balanceDiv.className = 'friend-split';
                 
-                // Get balances where others owe the current user
-                Object.keys(balances).forEach(key => {
-                    if (key.startsWith(currentUser.uid + '_')) {
-                        const friend = key.split('_')[1];
-                        const amount = balances[key];
-                        userBalances[friend] = amount;
-                        if (amount > 0) totalOwedToMe += amount;
-                    }
-                });
-
-                container.innerHTML = '';
-
-                // Show total summary
-                const summaryDiv = document.createElement('div');
-                summaryDiv.style.cssText = 'background: #e8f5e8; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center;';
-                summaryDiv.innerHTML = `
-                    <div style="font-size: 1.2rem; font-weight: 700; color: #28a745;">
-                        Total Owed to You: $${totalOwedToMe.toFixed(2)}
+                let balanceClass = 'balance-zero';
+                let balanceText = '$0.00';
+                let statusText = 'Even';
+                
+                if (balance > 0) {
+                    balanceClass = 'balance-positive';
+                    balanceText = `${balance.toFixed(2)}`;
+                    statusText = 'Owes you';
+                } else if (balance < 0) {
+                    balanceClass = 'balance-negative';
+                    balanceText = `${Math.abs(balance).toFixed(2)}`;
+                    statusText = 'You owe';
+                }
+                
+                balanceDiv.innerHTML = `
+                    <div>
+                        <div style="font-weight: 600;">${friend}</div>
+                        <div style="font-size: 0.8rem; color: #6c757d;">${statusText}</div>
+                    </div>
+                    <div class="${balanceClass}" style="text-align: right;">
+                        <div style="font-size: 1.1rem;">${balanceText}</div>
+                        ${balance !== 0 ? `<button onclick="settleBalance('${friend}')" style="font-size: 0.7rem; padding: 2px 6px; margin-top: 4px; width: auto; background: #6c757d;">Settle</button>` : ''}
                     </div>
                 `;
-                container.appendChild(summaryDiv);
-
-                if (Object.keys(userBalances).length === 0) {
-                    const noBalanceDiv = document.createElement('div');
-                    noBalanceDiv.innerHTML = '<p style="text-align: center; color: #6c757d;">No outstanding balances</p>';
-                    container.appendChild(noBalanceDiv);
-                    return;
-                }
-
-                // Sort friends by amount owed (highest first)
-                const sortedBalances = Object.entries(userBalances).sort((a, b) => b[1] - a[1]);
-
-                sortedBalances.forEach(([friend, balance]) => {
-                    const balanceDiv = document.createElement('div');
-                    balanceDiv.className = 'friend-split';
-                    
-                    let balanceClass = 'balance-zero';
-                    let balanceText = '$0.00';
-                    let statusText = 'Even';
-                    
-                    if (balance > 0) {
-                        balanceClass = 'balance-positive';
-                        balanceText = `$${balance.toFixed(2)}`;
-                        statusText = 'Owes you';
-                    } else if (balance < 0) {
-                        balanceClass = 'balance-negative';
-                        balanceText = `$${Math.abs(balance).toFixed(2)}`;
-                        statusText = 'You owe';
-                    }
-                    
-                    balanceDiv.innerHTML = `
-                        <div>
-                            <div style="font-weight: 600;">${friend}</div>
-                            <div style="font-size: 0.8rem; color: #6c757d;">${statusText}</div>
-                        </div>
-                        <div class="${balanceClass}" style="text-align: right;">
-                            <div style="font-size: 1.1rem;">${balanceText}</div>
-                            ${balance !== 0 ? `<button onclick="settleBalance('${friend}')" style="font-size: 0.7rem; padding: 2px 6px; margin-top: 4px; width: auto; background: #6c757d;">Settle</button>` : ''}
-                        </div>
-                    `;
-                    container.appendChild(balanceDiv);
-                });
-            } catch (error) {
-                container.innerHTML = '<p style="color: #dc3545;">Error loading balances</p>';
-            }
+                container.appendChild(balanceDiv);
+            });
         }
 
         async function settleBalance(friend) {
             if (confirm(`Mark balance with ${friend} as settled?`)) {
                 const balanceKey = `${currentUser.uid}_${friend}`;
                 await database.ref(`balances/${balanceKey}`).set(0);
+                
+                // Add settlement record
+                await database.ref('settlements').push({
+                    settledBy: currentUser.username,
+                    settledWith: friend,
+                    date: new Date().toISOString(),
+                    timestamp: Date.now()
+                });
+                
                 loadBalances(); // Refresh the display
             }
         }
 
         async function loadHistory() {
             const container = document.getElementById('expenseHistory');
-            container.innerHTML = '<div style="text-align: center; color: #667eea;">Loading history...</div>';
+            container.innerHTML = '';
 
-            try {
-                const snapshot = await database.ref('expenses').orderByChild('timestamp').once('value');
-                const expenses = snapshot.val();
+            const snapshot = await database.ref('expenses').orderByChild('timestamp').once('value');
+            const expenses = snapshot.val();
 
-                container.innerHTML = '';
-
-                if (!expenses) {
-                    container.innerHTML = '<p style="text-align: center; color: #6c757d;">No expenses yet</p>';
-                    return;
-                }
-
-                const userExpenses = Object.values(expenses)
-                    .filter(expense => 
-                        expense.paidBy === currentUser.username || 
-                        (expense.splitWith && expense.splitWith.includes(currentUser.username))
-                    )
-                    .sort((a, b) => b.timestamp - a.timestamp);
-
-                userExpenses.forEach(expense => {
-                    const expenseDiv = document.createElement('div');
-                    expenseDiv.className = 'expense-item';
-                    
-                    const date = new Date(expense.date).toLocaleDateString();
-                    const isPaidByUser = expense.paidBy === currentUser.username;
-                    
-                    expenseDiv.innerHTML = `
-                        <div class="expense-header">
-                            <div>
-                                <strong>${expense.description}</strong>
-                                <div class="expense-date">${date}</div>
-                            </div>
-                            <div class="expense-amount">$${expense.totalAmount.toFixed(2)}</div>
-                        </div>
-                        <div style="font-size: 0.9rem; color: #6c757d;">
-                            ${isPaidByUser ? 'You paid' : `Paid by ${expense.paidBy}`} • 
-                            Split ${(expense.splitWith?.length || 0) + 1} ways 
-                            ${expense.splitAmount ? `($${expense.splitAmount.toFixed(2)} each)` : ''}
-                        </div>
-                    `;
-                    container.appendChild(expenseDiv);
-                });
-            } catch (error) {
-                container.innerHTML = '<p style="color: #dc3545;">Error loading history</p>';
+            if (!expenses) {
+                container.innerHTML = '<p style="text-align: center; color: #6c757d;">No expenses yet</p>';
+                return;
             }
+
+            const userExpenses = Object.values(expenses)
+                .filter(expense => 
+                    expense.paidBy === currentUser.username || 
+                    expense.splitWith.includes(currentUser.username)
+                )
+                .sort((a, b) => b.timestamp - a.timestamp);
+
+            userExpenses.forEach(expense => {
+                const expenseDiv = document.createElement('div');
+                expenseDiv.className = 'expense-item';
+                
+                const date = new Date(expense.date).toLocaleDateString();
+                const isPaidByUser = expense.paidBy === currentUser.username;
+                
+                expenseDiv.innerHTML = `
+                    <div class="expense-header">
+                        <div>
+                            <strong>${expense.description}</strong>
+                            <div class="expense-date">${date}</div>
+                        </div>
+                        <div class="expense-amount">$${expense.totalAmount.toFixed(2)}</div>
+                    </div>
+                    <div style="font-size: 0.9rem; color: #6c757d;">
+                        ${isPaidByUser ? 'You paid' : `Paid by ${expense.paidBy}`} • 
+                        Split ${expense.splitWith.length + 1} ways ($${expense.splitAmount.toFixed(2)} each)
+                    </div>
+                `;
+                container.appendChild(expenseDiv);
+            });
         }
 
-        // Auth state observer
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                try {
-                    const snapshot = await database.ref('users/' + user.uid).once('value');
-                    const userData = snapshot.val();
-                    if (userData) {
-                        showMainApp(user, userData.username);
-                    }
-                } catch (error) {
-                    console.error('Error loading user data:', error);
+        async function removeFriend(friendName) {
+            if (confirm(`Remove ${friendName} from your friends list?`)) {
+                friends = friends.filter(f => f !== friendName);
+                
+                // Remove from database
+                const snapshot = await database.ref('userFriends/' + currentUser.uid).once('value');
+                const friendsData = snapshot.val();
+                if (friendsData) {
+                    Object.keys(friendsData).forEach(key => {
+                        if (friendsData[key] === friendName) {
+                            database.ref('userFriends/' + currentUser.uid + '/' + key).remove();
+                        }
+                    });
                 }
+                
+                updateFriendsSelection();
             }
-        });
-
-        // Add some CSS for better mobile experience
-        document.addEventListener('DOMContentLoaded', function() {
-            // Prevent zoom on input focus for iOS
-            document.addEventListener('touchstart', function() {}, true);
-        });
+        }
     </script>
 </body>
 </html>
